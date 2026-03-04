@@ -4,6 +4,7 @@ import useExchangeStore from '../stores/useExchangeStore';
 import CoinIcon from '../components/CoinIcon';
 import CurrencySelector from '../components/CurrencySelector';
 import FavoritesBottomSheet from '../components/FavoritesBottomSheet';
+import { SlotTicker } from '../components/SlotTicker';
 import { convertAmount } from '../utils/format';
 import trivLogo from '../assets/triv-logo.svg';
 import {
@@ -90,13 +91,13 @@ const HomeView = () => {
                     <div className="flex justify-between items-end mb-2">
                         <div>
                             <div className="flex items-baseline gap-2">
-                                <span className="text-3xl font-bold tracking-tight text-slate-900">{displayBalance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                                <SlotTicker value={displayBalance} className="text-3xl font-bold tracking-tight text-slate-900" />
                                 <CurrencySelector />
                             </div>
                             <div className="text-sm font-medium mt-1 flex items-center gap-1">
                                 <span className="text-slate-500">Today's PnL</span>
                                 <span className={todayPnl >= 0 ? "text-[#00C076]" : "text-[#FF4D5B]"}>
-                                    {todayPnl >= 0 ? '+' : '-'} {Math.abs(displayPnl).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ({todayPnl >= 0 ? '+' : ''}{pnlPercent}%)
+                                    {todayPnl >= 0 ? '+' : '-'} <SlotTicker value={Math.abs(displayPnl)} className="inline-flex" /> ({todayPnl >= 0 ? '+' : ''}{pnlPercent}%)
                                 </span>
                             </div>
                         </div>

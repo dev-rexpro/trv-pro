@@ -62,6 +62,36 @@ export default function App() {
     };
   }, []);
 
+  // Global Back Button Handler (Android / Browser Back)
+  useEffect(() => {
+    // Push an initial state so we can detect the first 'back' action without exiting the app
+    window.history.pushState(null, '', window.location.href);
+
+    const handlePopState = (e: PopStateEvent) => {
+      const state = useExchangeStore.getState();
+
+      if (state.isSearchOpen) {
+        state.setSearchOpen(false);
+        window.history.pushState(null, '', window.location.href);
+      } else if (state.isManageGroupsOpen) {
+        state.setManageGroupsOpen(false);
+        window.history.pushState(null, '', window.location.href);
+      } else if (state.isDepositOptionOpen) {
+        state.setDepositOptionOpen(false);
+        window.history.pushState(null, '', window.location.href);
+      } else if (state.activePage !== 'home') {
+        state.setActivePage('home');
+        window.history.pushState(null, '', window.location.href);
+      } else {
+        // We are on home page with no overlays. Allow the default popstate.
+        // Usually, users hit back again here to exit the app.
+      }
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
+
   return (
     <div className="flex flex-col h-screen bg-[#FDFDFD] text-slate-900 relative overflow-hidden">
       <style>{`
