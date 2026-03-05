@@ -78,6 +78,8 @@ interface ExchangeState {
     updatePosition: (id: string, updates: Partial<FuturesPosition>) => void;
     resetWallets: () => void;
     setHideBalance: (val: boolean) => void;
+    placeSpotOrder: (order: { symbol: string; side: 'Buy' | 'Sell'; type: 'Limit' | 'Market'; price: number; amount: number; marginMode: string; leverage: number }) => void;
+    cancelSpotOrder: (orderId: string) => void;
 }
 
 const useExchangeStore = create<ExchangeState>()(
@@ -117,12 +119,43 @@ const useExchangeStore = create<ExchangeState>()(
 
             // Demo Engine State Init
             wallets: {
-                spot: { USDT: 5000, BTC: 0.15, SOL: 14.5, HYPE: 1000 },
+                spot: { USDT: 6000, BTC: 0.15, SOL: 14.5, HYPE: 1000 },
                 futures: { USDT: 5000 },
                 earn: { USDT: 0 }
             },
-            positions: [],
-            openOrders: [],
+            positions: [
+                {
+                    id: 'pos-1',
+                    symbol: 'BTCUSDT',
+                    type: 'Long',
+                    side: 'Buy',
+                    leverage: 100,
+                    marginMode: 'Isolated',
+                    size: 1.0184,
+                    entryPrice: 67635.9,
+                    markPrice: 67721.1,
+                    liqPrice: 67262.4,
+                    margin: 688.8,
+                    pnl: 81.18,
+                    pnlPercent: 11.78,
+                    unrealizedPnl: 81.18,
+                    timestamp: Date.now()
+                }
+            ],
+            openOrders: [
+                {
+                    id: 'ord-1',
+                    symbol: 'BTCUSDT',
+                    type: 'Limit',
+                    side: 'Buy',
+                    price: 67200,
+                    amount: 0.2662,
+                    filled: 0,
+                    leverage: 100,
+                    marginMode: 'Isolated',
+                    timestamp: Date.now()
+                }
+            ],
             transactionHistory: [],
             tradeHistory: [],
             watchlist: [],
@@ -181,6 +214,94 @@ const useExchangeStore = create<ExchangeState>()(
             updatePosition: (id, updates) => set(s => ({
                 positions: s.positions.map(p => p.id === id ? { ...p, ...updates } : p)
             })),
+            placeSpotOrder: (order) => {
+                const { wallets, openOrders } = get();
+                const symbol = order.symbol.replace('USDT', '');
+
+                if (order.type === 'Limit') {
+                    // Lock funds
+                    const newWallets = { ...wallets };
+                    if (order.side === 'Buy') {
+                        const cost = order.price * order.amount;
+                        if ((newWallets.spot.USDT || 0) < cost) return;
+                        newWallets.spot.USDT = (newWallets.spot.USDT || 0) - cost;
+                    } else {
+                        if ((newWallets.spot[symbol] || 0) < order.amount) return;
+                        newWallets.spot[symbol] = (newWallets.spot[symbol] || 0) - order.amount;
+                    }
+
+                    const newOrder: PendingOrder = {
+                        id: `ord-${Date.now()}`,
+                        ...order,
+                        filled: 0,
+                        timestamp: Date.now()
+                    };
+
+                    set({ wallets: newWallets, openOrders: [newOrder, ...openOrders] });
+                    get().addTransaction({
+                        id: `TX-${Date.now()}`,
+                        type: 'Trade',
+                        status: 'Pending',
+                        amount: order.side === 'Buy' ? order.price * order.amount : order.amount,
+                        currency: order.side === 'Buy' ? 'USDT' : symbol,
+                        timestamp: Date.now(),
+                        to: 'Spot'
+                    });
+                } else {
+                    // Market order: fill immediately at "last price" (simplified for demo)
+                    const { markets } = get();
+                    const market = markets.find(m => m.symbol === order.symbol);
+                    const fillPrice = market ? parseFloat(market.lastPrice) : order.price;
+
+                    const newWallets = { ...wallets };
+                    if (order.side === 'Buy') {
+                        const cost = fillPrice * order.amount;
+                        if ((newWallets.spot.USDT || 0) < cost) return;
+                        newWallets.spot.USDT = (newWallets.spot.USDT || 0) - cost;
+                        newWallets.spot[symbol] = (newWallets.spot[symbol] || 0) + order.amount;
+                    } else {
+                        if ((newWallets.spot[symbol] || 0) < order.amount) return;
+                        newWallets.spot[symbol] = (newWallets.spot[symbol] || 0) - order.amount;
+                        newWallets.spot.USDT = (newWallets.spot.USDT || 0) + (fillPrice * order.amount);
+                    }
+
+                    set({ wallets: newWallets });
+                    get().addTrade({
+                        id: `TR-${Date.now()}`,
+                        symbol: order.symbol,
+                        side: order.side,
+                        type: 'Market',
+                        price: fillPrice,
+                        amount: order.amount,
+                        fee: 0,
+                        pnl: 0,
+                        timestamp: Date.now()
+                    });
+                }
+                get().updateAssetPrices();
+            },
+
+            cancelSpotOrder: (orderId) => {
+                const { wallets, openOrders } = get();
+                const order = openOrders.find(o => o.id === orderId);
+                if (!order) return;
+
+                const newWallets = { ...wallets };
+                const symbol = order.symbol.replace('USDT', '');
+
+                if (order.side === 'Buy') {
+                    newWallets.spot.USDT = (newWallets.spot.USDT || 0) + (order.price * order.amount);
+                } else {
+                    newWallets.spot[symbol] = (newWallets.spot[symbol] || 0) + order.amount;
+                }
+
+                set({
+                    wallets: newWallets,
+                    openOrders: openOrders.filter(o => o.id !== orderId)
+                });
+                get().updateAssetPrices();
+            },
+
             resetWallets: () => {
                 const { markets } = get();
                 const btcMarket = markets.find(m => m.symbol === 'BTCUSDT' || m.symbol === 'BTCUSD');
@@ -221,7 +342,43 @@ const useExchangeStore = create<ExchangeState>()(
             // Auto-Calculation: recalculate asset values from latest market prices and wallets
             // Auto-PnL: compute daily PnL from weighted asset × priceChangePercent
             updateAssetPrices: () => {
-                const { wallets, markets } = get();
+                const { wallets, markets, openOrders } = get();
+
+                // --- Simple Matcher Simulation ---
+                let fillOccurred = false;
+                const remainingOrders: PendingOrder[] = [];
+                const updatedWallets = { ...wallets };
+
+                openOrders.forEach(order => {
+                    const market = markets.find(m => m.symbol === order.symbol);
+                    if (!market) {
+                        remainingOrders.push(order);
+                        return;
+                    }
+
+                    const currentPrice = parseFloat(market.lastPrice);
+                    const shouldFill = order.side === 'Buy'
+                        ? currentPrice <= order.price
+                        : currentPrice >= order.price;
+
+                    if (shouldFill) {
+                        fillOccurred = true;
+                        const symbol = order.symbol.replace('USDT', '');
+                        if (order.side === 'Buy') {
+                            updatedWallets.spot[symbol] = (updatedWallets.spot[symbol] || 0) + order.amount;
+                        } else {
+                            updatedWallets.spot.USDT = (updatedWallets.spot.USDT || 0) + (order.price * order.amount);
+                        }
+                    } else {
+                        remainingOrders.push(order);
+                    }
+                });
+
+                if (fillOccurred) {
+                    set({ wallets: updatedWallets, openOrders: remainingOrders });
+                }
+                // ---------------------------------
+
                 let spotTotal = 0;
                 let futuresTotal = 0;
                 let earnTotal = 0;
