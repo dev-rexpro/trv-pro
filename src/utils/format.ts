@@ -26,7 +26,7 @@ export const formatCurrency = (
 
     switch (currency) {
         case 'IDR':
-            return `Rp${(amount * rate).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+            return `Rp${(amount * rate).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
         case 'BTC':
             return `₿${(amount * rate).toFixed(8)}`;
         case 'USDT':

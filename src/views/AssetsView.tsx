@@ -19,14 +19,19 @@ import { FaCoins as Coins } from 'react-icons/fa';
 import { RxTriangleDown as ChevronDown } from 'react-icons/rx';
 import { RiPlayListAddFill as MoreHorizontal } from 'react-icons/ri';
 import { MdHistory as History } from 'react-icons/md';
+import { AutoShrink } from '../components/AutoShrink';
+import { SlotTicker } from '../components/SlotTicker';
 
 const AssetsView = () => {
-    const [showVal, setShowVal] = useState(true);
     const [activeTab, setActiveTab] = useState('Overview');
     const [hideZero, setHideZero] = useState(true);
     const [isConfirmOpen, setIsConfirmOpen] = useState(false);
     const [toastMessage, setToastMessage] = useState('');
-    const { balance, spotBalance, futuresBalance, earnBalance, todayPnl, pnlPercent, assets, rates, currency, setDepositOptionOpen, setActivePage, resetWallets } = useExchangeStore();
+    const {
+        balance, spotBalance, futuresBalance, earnBalance, todayPnl, pnlPercent,
+        assets, rates, currency, setDepositOptionOpen, setActivePage, resetWallets,
+        hideBalance, setHideBalance
+    } = useExchangeStore();
     const idrRate = rates?.IDR || 16300;
     const liveSpotBalance = spotBalance;
     const totalBalance = balance;
@@ -66,7 +71,7 @@ const AssetsView = () => {
                             <span className="mr-1">{activeTab === 'Overview' ? 'Est total value' : activeTab === 'Earn' ? 'Asset Value(est.)' : `${activeTab} Value`} (</span>
                             <CurrencySelector />
                             <span>)</span>
-                            {showVal ? <Eye size={16} className="ml-2 cursor-pointer" onClick={() => setShowVal(false)} /> : <EyeOff size={16} className="ml-2 cursor-pointer" onClick={() => setShowVal(true)} />}
+                            {!hideBalance ? <Eye size={16} className="ml-2 cursor-pointer" onClick={() => setHideBalance(true)} /> : <EyeOff size={16} className="ml-2 cursor-pointer" onClick={() => setHideBalance(false)} />}
                         </div>
                         <div className="flex items-center text-slate-400 gap-4">
                             <span className="cursor-pointer text-[#FF4D5B] active:scale-90 transition-transform">
@@ -76,25 +81,46 @@ const AssetsView = () => {
                         </div>
                     </div>
                     <div className="mb-4">
-                        <div className="text-[36px] font-medium text-slate-900 leading-none tracking-tight">{showVal ? convertedBalance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '******'}</div>
-                        <div className="text-[13px] text-slate-400 font-medium mt-1.5 flex items-center">{showVal ? <span>≈Rp{(displayBalance * idrRate).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span> : '******'}</div>
+                        <div className="text-[30px] font-medium text-slate-900 leading-none tracking-tight">
+                            <AutoShrink>
+                                {!hideBalance ? (
+                                    <SlotTicker
+                                        value={convertedBalance}
+                                        decimals={currency === 'IDR' ? 0 : 2}
+                                        className="block"
+                                    />
+                                ) : (
+                                    <span className="block">******</span>
+                                )}
+                            </AutoShrink>
+                        </div>
+                        <div className="text-[13px] text-slate-400 font-medium mt-1.5 flex items-center">
+                            {!hideBalance ? (
+                                <span>≈Rp<SlotTicker value={displayBalance * idrRate} decimals={0} className="inline-flex" /></span>
+                            ) : '******'}
+                        </div>
                     </div>
                     {activeTab === 'Spot' || activeTab === 'Overview' ? (
                         <div className="flex items-center text-[12px] font-medium inline-flex cursor-pointer group">
                             <span className="text-slate-400 border-b border-dashed border-slate-300 mr-2">Today's PnL</span>
-                            {showVal ? <div className={`${pnlColor} flex items-center`}><span>{pnlPrefixSymbol}{Math.abs(convertedPnl).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span><span className="ml-1">({pnlPrefixSymbol}{pnlPercent}%)</span></div> : <span className="text-slate-400">******</span>}
+                            {!hideBalance ? (
+                                <div className={`${pnlColor} flex items-center`}>
+                                    <span>{pnlPrefixSymbol}<SlotTicker value={Math.abs(convertedPnl)} decimals={currency === 'IDR' ? 0 : 2} className="inline-flex" /></span>
+                                    <span className="ml-1">({pnlPrefixSymbol}{pnlPercent}%)</span>
+                                </div>
+                            ) : <span className="text-slate-400">******</span>}
                             <ChevronRight size={12} className="text-slate-300 ml-1" />
                         </div>
                     ) : activeTab === 'Futures' ? (
                         <div className="flex items-center text-[12px] font-medium inline-flex cursor-pointer group">
                             <span className="text-slate-400 border-b border-dashed border-slate-300 mr-2">Today's PnL</span>
-                            {showVal ? <div className="text-slate-500 flex items-center"><span>0.00</span><span className="ml-1">(0.00%)</span></div> : <span className="text-slate-400">******</span>}
+                            {!hideBalance ? <div className="text-slate-500 flex items-center"><span><SlotTicker value={0} decimals={2} /></span><span className="ml-1">(0.00%)</span></div> : <span className="text-slate-400">******</span>}
                             <ChevronRight size={12} className="text-slate-300 ml-1" />
                         </div>
                     ) : (
                         <div className="flex items-center text-[12px] font-medium inline-flex group">
                             <span className="text-slate-400 mr-2">Yesterday's PnL</span>
-                            {showVal ? <div className="text-slate-500 flex items-center"><span>Rp0.00</span></div> : <span className="text-slate-400">******</span>}
+                            {!hideBalance ? <div className="text-slate-500 flex items-center"><span>Rp<SlotTicker value={0} decimals={0} /></span></div> : <span className="text-slate-400">******</span>}
                         </div>
                     )}
                 </div>
@@ -135,7 +161,7 @@ const AssetsView = () => {
                     </div>
                 )}
 
-                <AssetList activeTab={activeTab} setActiveTab={setActiveTab} showVal={showVal} liveSpotBalance={liveSpotBalance} futuresBalance={futuresBalance} earnBalance={earnBalance} idrRate={idrRate} filteredAssets={filteredAssets} hideZero={hideZero} />
+                <AssetList activeTab={activeTab} setActiveTab={setActiveTab} hideBalance={hideBalance} liveSpotBalance={liveSpotBalance} futuresBalance={futuresBalance} earnBalance={earnBalance} idrRate={idrRate} filteredAssets={filteredAssets} hideZero={hideZero} />
             </div>
 
             <ConfirmDialog
@@ -164,14 +190,14 @@ const AssetsView = () => {
     );
 };
 
-const AssetList = React.memo(({ activeTab, setActiveTab, showVal, liveSpotBalance, futuresBalance, earnBalance, idrRate, filteredAssets, hideZero }: any) => {
+const AssetList = React.memo(({ activeTab, setActiveTab, hideBalance, liveSpotBalance, futuresBalance, earnBalance, idrRate, filteredAssets, hideZero }: any) => {
     return (
         <div className="flex flex-col gap-6">
             {activeTab === 'Overview' ? <>
                 {[{ name: 'Spot', balance: liveSpotBalance }, { name: 'Futures', balance: futuresBalance }, { name: 'Earn', balance: earnBalance }].map(port => (
                     <div key={`port-${port.name}`} className="flex justify-between items-center cursor-pointer" onClick={() => setActiveTab(port.name)}>
                         <div className="flex items-center gap-3"><div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 font-bold text-sm">{port.name[0]}</div><div className="flex flex-col"><span className="font-bold text-[15px] text-slate-900">{port.name}</span></div></div>
-                        <div className="flex flex-col items-end"><span className="font-bold text-[15px] text-slate-900 tabular-nums">{showVal ? port.balance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '******'}</span><span className="text-[12px] text-slate-400 font-medium tabular-nums mt-0.5">{showVal ? `Rp${(port.balance * idrRate).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '******'}</span></div>
+                        <div className="flex flex-col items-end"><span className="font-bold text-[15px] text-slate-900 tabular-nums">{!hideBalance ? port.balance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '******'}</span><span className="text-[12px] text-slate-400 font-medium tabular-nums mt-0.5">{!hideBalance ? <span>Rp<SlotTicker value={port.balance * idrRate} decimals={0} className="inline-flex" /></span> : '******'}</span></div>
                     </div>
                 ))}
             </> : activeTab === 'Spot' ? filteredAssets.map((asset: any) => (
@@ -183,14 +209,14 @@ const AssetList = React.memo(({ activeTab, setActiveTab, showVal, liveSpotBalanc
                             {asset.symbol !== 'USDT' && <span className="text-[12px] text-slate-300 font-medium">/USDT</span>}
                         </div>
                     </div>
-                    <div className="flex flex-col items-end"><span className="font-bold text-[15px] text-slate-900 tabular-nums">{showVal ? (asset.symbol === 'BTC' ? asset.amount.toFixed(8) : asset.amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 8 })) : '******'}</span><span className="text-[12px] text-slate-400 font-medium tabular-nums mt-0.5">{showVal ? `Rp${(asset.valueUsdt * idrRate).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '******'}</span></div>
+                    <div className="flex flex-col items-end"><span className="font-bold text-[15px] text-slate-900 tabular-nums">{!hideBalance ? (asset.symbol === 'BTC' ? asset.amount.toFixed(8) : asset.amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 8 })) : '******'}</span><span className="text-[12px] text-slate-400 font-medium tabular-nums mt-0.5">{!hideBalance ? <span>Rp<SlotTicker value={asset.valueUsdt * idrRate} decimals={0} className="inline-flex" /></span> : '******'}</span></div>
                 </div>
             )) : activeTab === 'Futures' ? <>
                 {(!hideZero || futuresBalance > 0) && (
-                    <div className="flex justify-between items-center cursor-pointer"><div className="flex items-center gap-3"><CoinIcon symbol="USDT" size={8} /><div className="flex flex-col"><span className="font-bold text-[15px] text-slate-900">USDT</span></div></div><div className="flex flex-col items-end"><span className="font-bold text-[15px] text-slate-900 tabular-nums">{showVal ? futuresBalance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '******'}</span><span className="text-[12px] text-slate-400 font-medium tabular-nums mt-0.5">{showVal ? `Rp${(futuresBalance * idrRate).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '******'}</span></div></div>
+                    <div className="flex justify-between items-center cursor-pointer"><div className="flex items-center gap-3"><CoinIcon symbol="USDT" size={8} /><div className="flex flex-col"><span className="font-bold text-[15px] text-slate-900">USDT</span></div></div><div className="flex flex-col items-end"><span className="font-bold text-[15px] text-slate-900 tabular-nums">{!hideBalance ? futuresBalance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '******'}</span><span className="text-[12px] text-slate-400 font-medium tabular-nums mt-0.5">{!hideBalance ? <span>Rp<SlotTicker value={futuresBalance * idrRate} decimals={0} className="inline-flex" /></span> : '******'}</span></div></div>
                 )}
                 {hideZero ? null : ['BTC', 'ETH', 'SOL', 'ADA'].map(sym => (
-                    <div key={`fut-zero-${sym}`} className="flex justify-between items-center cursor-pointer"><div className="flex items-center gap-3"><CoinIcon symbol={sym} size={8} /><div className="flex flex-col"><span className="font-bold text-[15px] text-slate-900">{sym}</span></div></div><div className="flex flex-col items-end"><span className="font-bold text-[15px] text-slate-900 tabular-nums">{showVal ? '0.00000000' : '******'}</span><span className="text-[12px] text-slate-400 font-medium tabular-nums mt-0.5">{showVal ? 'Rp0.00' : '******'}</span></div></div>
+                    <div key={`fut-zero-${sym}`} className="flex justify-between items-center cursor-pointer"><div className="flex items-center gap-3"><CoinIcon symbol={sym} size={8} /><div className="flex flex-col"><span className="font-bold text-[15px] text-slate-900">{sym}</span></div></div><div className="flex flex-col items-end"><span className="font-bold text-[15px] text-slate-900 tabular-nums">{!hideBalance ? '0.00000000' : '******'}</span><span className="text-[12px] text-slate-400 font-medium tabular-nums mt-0.5">{!hideBalance ? <span>Rp<SlotTicker value={0} decimals={0} className="inline-flex" /></span> : '******'}</span></div></div>
                 ))}
             </> : activeTab === 'Earn' ? (
                 <div className="flex flex-col items-center justify-center py-20 text-center"><div className="w-10 h-12 border-2 border-slate-300 rounded-md flex flex-col items-start justify-center p-2 mb-4 relative bg-transparent"><div className="w-5 h-[2px] bg-slate-300 rounded-full mb-1.5"></div><div className="w-3 h-[2px] bg-slate-300 rounded-full"></div></div><span className="text-slate-400 text-[13px] font-medium mb-3">No active subscriptions.</span><div className="flex items-center text-slate-900 text-[15px] font-bold cursor-pointer group"><span className="group-hover:underline">Go to Earn</span><ArrowRight size={16} className="ml-1" strokeWidth={2.5} /></div></div>

@@ -5,9 +5,13 @@ import type {
     MarketData, Asset, ExchangeRates, FavoriteGroups, CurrencyCode,
     WalletBalances, TransactionRecord, TradeRecord, PendingOrder, FuturesPosition, UnifiedCoin
 } from '../types';
+import type { BinanceSymbolInfo } from '../utils/api';
 
 interface ExchangeState {
     markets: MarketData[];
+    futuresMarkets: MarketData[];
+    spotSymbols: BinanceSymbolInfo[];
+    futuresSymbols: BinanceSymbolInfo[];
     history: string[];
     favorites: string[];
     favoriteGroups: FavoriteGroups;
@@ -22,11 +26,14 @@ interface ExchangeState {
     isManageGroupsOpen: boolean;
     isDepositOptionOpen: boolean;
     selectedCoin: string;
+    tradeType: 'spot' | 'futures';
+    isPairPickerOpen: boolean;
     searchQuery: string;
     homeFilter: string;
     assets: Asset[];
     currency: CurrencyCode;
     rates: ExchangeRates;
+    hideBalance: boolean;
 
     // Demo Engine State
     wallets: {
@@ -42,6 +49,9 @@ interface ExchangeState {
 
     // Actions
     setMarkets: (data: MarketData[]) => void;
+    setFuturesMarkets: (data: MarketData[]) => void;
+    setSpotSymbols: (data: BinanceSymbolInfo[]) => void;
+    setFuturesSymbols: (data: BinanceSymbolInfo[]) => void;
     setCurrency: (currency: CurrencyCode) => void;
     setRates: (rates: ExchangeRates) => void;
     setActivePage: (page: string) => void;
@@ -50,7 +60,10 @@ interface ExchangeState {
     setDepositOptionOpen: (val: boolean) => void;
     setSearchQuery: (query: string) => void;
     setHomeFilter: (filter: string) => void;
+    setTradeType: (type: 'spot' | 'futures') => void;
+    setPairPickerOpen: (val: boolean) => void;
     clearHistory: () => void;
+    addToHistory: (query: string) => void;
     toggleFavorite: (symbol: string) => void;
     addFavoriteGroup: (name: string) => void;
     deleteFavoriteGroup: (name: string) => void;
@@ -64,12 +77,16 @@ interface ExchangeState {
     removePosition: (id: string) => void;
     updatePosition: (id: string, updates: Partial<FuturesPosition>) => void;
     resetWallets: () => void;
+    setHideBalance: (val: boolean) => void;
 }
 
 const useExchangeStore = create<ExchangeState>()(
     persist(
         (set, get) => ({
             markets: [],
+            futuresMarkets: [],
+            spotSymbols: [],
+            futuresSymbols: [],
             history: ['NEWT (Ethereum)', 'JTOUSDT Perp', 'SOLUSDT Perp'],
             favorites: ['BTCUSDT', 'ETHUSDT', 'SOLUSDT', 'BNBUSDT'],
             favoriteGroups: { 'Group-1': ['BTCUSDT', 'ETHUSDT', 'SOLUSDT', 'BNBUSDT'] },
@@ -84,6 +101,8 @@ const useExchangeStore = create<ExchangeState>()(
             isManageGroupsOpen: false,
             isDepositOptionOpen: false,
             selectedCoin: 'BTCUSDT',
+            tradeType: 'spot',
+            isPairPickerOpen: false,
             searchQuery: '',
             homeFilter: 'Favorites',
             assets: [
@@ -94,6 +113,7 @@ const useExchangeStore = create<ExchangeState>()(
             ],
             currency: 'USD',
             rates: { USD: 1, USDT: 1, IDR: 16300, BTC: 0.000015 },
+            hideBalance: false,
 
             // Demo Engine State Init
             wallets: {
@@ -108,14 +128,24 @@ const useExchangeStore = create<ExchangeState>()(
             watchlist: [],
 
             setMarkets: (data) => set({ markets: data }),
+            setFuturesMarkets: (data) => set({ futuresMarkets: data }),
+            setSpotSymbols: (data) => set({ spotSymbols: data }),
+            setFuturesSymbols: (data) => set({ futuresSymbols: data }),
             setCurrency: (currency) => set({ currency }),
             setRates: (rates) => set({ rates }),
+            setHideBalance: (val) => set({ hideBalance: val }),
             setActivePage: (page) => set({ activePage: page }),
             setSearchOpen: (val) => set({ isSearchOpen: val }),
             setManageGroupsOpen: (val) => set({ isManageGroupsOpen: val }),
             setSearchQuery: (query) => set({ searchQuery: query }),
             setHomeFilter: (filter) => set({ homeFilter: filter }),
+            setTradeType: (type) => set({ tradeType: type }),
+            setPairPickerOpen: (val) => set({ isPairPickerOpen: val }),
             clearHistory: () => set({ history: [] }),
+            addToHistory: (query) => set((state) => {
+                const filtered = state.history.filter(h => h !== query);
+                return { history: [query, ...filtered].slice(0, 20) };
+            }),
 
             toggleFavorite: (symbol) => {
                 const favs = get().favorites;
@@ -165,12 +195,25 @@ const useExchangeStore = create<ExchangeState>()(
                 const solAmount = 2500 / solPrice;
                 const bnbAmount = 2500 / bnbPrice;
 
+                // Create initial deposit history
+                const now = Date.now();
+                const initialHistory = [
+                    { id: `INIT-USDT-${now}`, type: 'Deposit', status: 'Completed', amount: 5000, currency: 'USDT', timestamp: now, to: 'Futures' },
+                    { id: `INIT-BTC-${now}`, type: 'Deposit', status: 'Completed', amount: btcAmount, currency: 'BTC', timestamp: now, to: 'Spot' },
+                    { id: `INIT-SOL-${now}`, type: 'Deposit', status: 'Completed', amount: solAmount, currency: 'SOL', timestamp: now, to: 'Spot' },
+                    { id: `INIT-BNB-${now}`, type: 'Deposit', status: 'Completed', amount: bnbAmount, currency: 'BNB', timestamp: now, to: 'Spot' },
+                ];
+
                 set({
                     wallets: {
                         spot: { USDT: 0, BTC: btcAmount, SOL: solAmount, BNB: bnbAmount },
                         futures: { USDT: 5000 },
                         earn: { USDT: 0 }
-                    }
+                    },
+                    transactionHistory: initialHistory,
+                    tradeHistory: [],
+                    positions: [],
+                    openOrders: [],
                 });
                 get().updateAssetPrices();
             },
@@ -220,6 +263,14 @@ const useExchangeStore = create<ExchangeState>()(
                 const totalValue = spotTotal + futuresTotal + earnTotal;
                 const pnlPercent = totalValue > 0 ? (weightedPnl / totalValue) * 100 : 0;
 
+                // Dynamically update BTC rate for display purposes
+                const btcMarket = markets.find(m => m.symbol === 'BTCUSDT');
+                const btcPrice = btcMarket ? parseFloat(btcMarket.lastPrice) : 0;
+                const newRates = { ...get().rates };
+                if (btcPrice > 0) {
+                    newRates.BTC = 1 / btcPrice;
+                }
+
                 set({
                     assets: updatedAssets,
                     balance: totalValue,
@@ -228,6 +279,7 @@ const useExchangeStore = create<ExchangeState>()(
                     earnBalance: earnTotal,
                     todayPnl: weightedPnl,
                     pnlPercent: parseFloat(pnlPercent.toFixed(2)),
+                    rates: newRates,
                 });
             },
         }),

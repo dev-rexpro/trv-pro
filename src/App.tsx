@@ -2,7 +2,7 @@
 import React, { useEffect } from 'react';
 import { AnimatePresence } from 'motion/react';
 import useExchangeStore from './stores/useExchangeStore';
-import { fetchBinanceTicker, fetchExchangeRates } from './utils/api';
+import { fetchBinanceTicker, fetchBinanceFuturesTicker, fetchExchangeRates, fetchExchangeInfo } from './utils/api';
 
 // Views
 import HomeView from './views/HomeView';
@@ -16,10 +16,12 @@ import CardDepositView from './views/CardDepositView';
 import WithdrawalView from './views/WithdrawalView';
 import TransferView from './views/TransferView';
 import HistoryView from './views/HistoryView';
+import ChartTradeView from './views/ChartTradeView';
 
 // Overlays
 import SearchOverlay from './components/SearchOverlay';
 import DepositBottomSheet from './components/DepositBottomSheet';
+import PairPickerOverlay from './components/PairPickerOverlay';
 
 // Icons
 import { LuWallet as Wallet } from 'react-icons/lu';
@@ -31,13 +33,17 @@ import homeIcon from './assets/icons/home-icon.svg';
 import systemFont from './assets/fonts/system-font.woff2';
 
 export default function App() {
-  const { activePage, setActivePage, setMarkets, setRates, isSearchOpen, isManageGroupsOpen, isDepositOptionOpen, updateAssetPrices } = useExchangeStore();
+  const { activePage, setActivePage, setMarkets, setFuturesMarkets, setRates, setSpotSymbols, setFuturesSymbols, isSearchOpen, isManageGroupsOpen, isDepositOptionOpen, isPairPickerOpen, updateAssetPrices } = useExchangeStore();
 
   useEffect(() => {
     const fetchTicker = async () => {
       try {
-        const data = await fetchBinanceTicker();
-        setMarkets(data);
+        const [spotData, futuresData] = await Promise.all([
+          fetchBinanceTicker(),
+          fetchBinanceFuturesTicker()
+        ]);
+        setMarkets(spotData);
+        setFuturesMarkets(futuresData);
         // Auto-calculate asset values from latest prices
         setTimeout(() => useExchangeStore.getState().updateAssetPrices(), 0);
       } catch (e) { }
@@ -62,6 +68,18 @@ export default function App() {
     };
   }, []);
 
+  // Fetch complete symbol lists (one-time, cached)
+  useEffect(() => {
+    const initSymbols = async () => {
+      try {
+        const { spotSymbols, futuresSymbols } = await fetchExchangeInfo();
+        setSpotSymbols(spotSymbols);
+        setFuturesSymbols(futuresSymbols);
+      } catch (e) { }
+    };
+    initSymbols();
+  }, []);
+
   // Global Back Button Handler (Android / Browser Back)
   useEffect(() => {
     // Push an initial state so we can detect the first 'back' action without exiting the app
@@ -76,8 +94,14 @@ export default function App() {
       } else if (state.isManageGroupsOpen) {
         state.setManageGroupsOpen(false);
         window.history.pushState(null, '', window.location.href);
+      } else if (state.isPairPickerOpen) {
+        state.setPairPickerOpen(false);
+        window.history.pushState(null, '', window.location.href);
       } else if (state.isDepositOptionOpen) {
         state.setDepositOptionOpen(false);
+        window.history.pushState(null, '', window.location.href);
+      } else if (state.activePage === 'chart-trade') {
+        state.setActivePage('home');
         window.history.pushState(null, '', window.location.href);
       } else if (state.activePage !== 'home') {
         state.setActivePage('home');
@@ -108,6 +132,7 @@ export default function App() {
       <AnimatePresence>
         {isSearchOpen && <SearchOverlay />}
         {isManageGroupsOpen && <ManageGroupsView />}
+        {isPairPickerOpen && <PairPickerOverlay />}
       </AnimatePresence>
       <DepositBottomSheet />
 
@@ -123,37 +148,40 @@ export default function App() {
         {activePage === 'withdraw' && <WithdrawalView />}
         {activePage === 'transfer' && <TransferView />}
         {activePage === 'history' && <HistoryView />}
+        {activePage === 'chart-trade' && <ChartTradeView />}
       </div>
 
-      <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-100 flex justify-around items-center pt-2 pb-6 z-50 px-2">
-        <button onClick={() => setActivePage('home')} className={`flex flex-col items-center gap-1 ${activePage === 'home' ? 'text-slate-900' : 'text-slate-400'}`}>
-          <img src={homeIcon} alt="Home" className={`w-[22px] h-[22px] ${activePage === 'home' ? 'opacity-100' : 'opacity-40'}`} />
-          <span className="text-[10px] font-medium">Home</span>
-        </button>
-        <button onClick={() => setActivePage('market')} className={`flex flex-col items-center gap-1 ${activePage === 'market' ? 'text-slate-900' : 'text-slate-400'}`}>
-          <ChartNoAxesCombined size={22} />
-          <span className="text-[10px] font-medium">Markets</span>
-        </button>
+      {activePage !== 'chart-trade' && (
+        <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-100 flex justify-around items-center pt-2 pb-6 z-50 px-2">
+          <button onClick={() => setActivePage('home')} className={`flex flex-col items-center gap-1 ${activePage === 'home' ? 'text-slate-900' : 'text-slate-400'}`}>
+            <img src={homeIcon} alt="Home" className={`w-[22px] h-[22px] ${activePage === 'home' ? 'opacity-100' : 'opacity-40'}`} />
+            <span className="text-[10px] font-medium">Home</span>
+          </button>
+          <button onClick={() => setActivePage('market')} className={`flex flex-col items-center gap-1 ${activePage === 'market' ? 'text-slate-900' : 'text-slate-400'}`}>
+            <ChartNoAxesCombined size={22} />
+            <span className="text-[10px] font-medium">Markets</span>
+          </button>
 
-        <button onClick={() => setActivePage('trade')} className={`flex flex-col items-center gap-1 relative ${activePage === 'trade' ? 'text-slate-900' : 'text-slate-400'}`}>
-          <div className="w-[24px] h-[24px]"></div>
-          <div className="absolute -top-5 left-1/2 -translate-x-1/2 w-[42px] h-[42px] bg-[#3189c6] rounded-full flex items-center justify-center text-white shadow-sm active:scale-95 transition-transform">
-            <div className={`transition-all duration-200 flex items-center justify-center ${activePage === 'trade' ? 'scale-110' : 'scale-100'}`}>
-              {activePage === 'trade' ? <TbTransferVertical size={28} strokeWidth={2} /> : <TbTransfer size={28} strokeWidth={2} />}
+          <button onClick={() => setActivePage('trade')} className={`flex flex-col items-center gap-1 relative ${activePage === 'trade' ? 'text-slate-900' : 'text-slate-400'}`}>
+            <div className="w-[24px] h-[24px]"></div>
+            <div className="absolute -top-5 left-1/2 -translate-x-1/2 w-[42px] h-[42px] bg-[#3189c6] rounded-full flex items-center justify-center text-white shadow-sm active:scale-95 transition-transform">
+              <div className={`transition-all duration-200 flex items-center justify-center ${activePage === 'trade' ? 'scale-110' : 'scale-100'}`}>
+                {activePage === 'trade' ? <TbTransferVertical size={28} strokeWidth={2} /> : <TbTransfer size={28} strokeWidth={2} />}
+              </div>
             </div>
-          </div>
-          <span className="text-[10px] font-medium">Trade</span>
-        </button>
+            <span className="text-[10px] font-medium">Trade</span>
+          </button>
 
-        <button onClick={() => setActivePage('futures')} className={`flex flex-col items-center gap-1 ${activePage === 'futures' ? 'text-slate-900' : 'text-slate-400'}`}>
-          <FuturesIcon size={22} strokeWidth={activePage === 'futures' ? 2.5 : 2} />
-          <span className="text-[10px] font-medium">Futures</span>
-        </button>
-        <button onClick={() => setActivePage('assets')} className={`flex flex-col items-center gap-1 ${activePage === 'assets' ? 'text-slate-900' : 'text-slate-400'}`}>
-          <Wallet size={22} strokeWidth={activePage === 'assets' ? 2.5 : 2} />
-          <span className="text-[10px] font-medium">Assets</span>
-        </button>
-      </nav>
+          <button onClick={() => setActivePage('futures')} className={`flex flex-col items-center gap-1 ${activePage === 'futures' ? 'text-slate-900' : 'text-slate-400'}`}>
+            <FuturesIcon size={22} strokeWidth={activePage === 'futures' ? 2.5 : 2} />
+            <span className="text-[10px] font-medium">Futures</span>
+          </button>
+          <button onClick={() => setActivePage('assets')} className={`flex flex-col items-center gap-1 ${activePage === 'assets' ? 'text-slate-900' : 'text-slate-400'}`}>
+            <Wallet size={22} strokeWidth={activePage === 'assets' ? 2.5 : 2} />
+            <span className="text-[10px] font-medium">Assets</span>
+          </button>
+        </nav>
+      )}
     </div>
   );
 }

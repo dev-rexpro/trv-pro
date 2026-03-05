@@ -1,10 +1,12 @@
 // @ts-nocheck
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import useExchangeStore from '../stores/useExchangeStore';
 import CoinIcon from '../components/CoinIcon';
 import TradingViewChart from '../components/TradingViewChart';
 import { AssetPositionCard, PendingOrderCard } from '../components/TradeCards';
+import { useOrderBookSocket } from '../hooks/useOrderBookSocket';
+import { useTickerSocket } from '../hooks/useTickerSocket';
 import {
     FiCheck as Check,
     FiInfo as Info,
@@ -21,7 +23,7 @@ import { MdOutlineCandlestickChart as CandlestickChart } from 'react-icons/md';
 import { PiDotsSixBold } from 'react-icons/pi';
 
 const TradeView = () => {
-    const { selectedCoin, markets, activePage, setActivePage, assets } = useExchangeStore();
+    const { selectedCoin, markets, futuresMarkets, activePage, setActivePage, assets } = useExchangeStore();
     const [tpSlEnabled, setTpSlEnabled] = useState(false);
     const [side, setSide] = useState<'buy' | 'sell'>('buy');
     const [orderType, setOrderType] = useState<'Market order' | 'Limit order'>('Market order');
@@ -30,8 +32,21 @@ const TradeView = () => {
     const [isChartOpen, setIsChartOpen] = useState(false);
     const [chartInterval, setChartInterval] = useState('15m');
     const [activeTab, setActiveTab] = useState('Positions');
-    const coin = markets.find(m => m.symbol === selectedCoin) || { symbol: 'BTCUSDT', lastPrice: '67384.0', priceChangePercent: '2.17' };
     const isFutures = activePage === 'futures';
+
+    // Fetch real orderbook via WebSocket
+    const { orderBook } = useOrderBookSocket(selectedCoin, isFutures ? 'futures' : 'spot', 20);
+    const coin = (isFutures ? futuresMarkets : markets).find(m => m.symbol === selectedCoin) || markets.find(m => m.symbol === selectedCoin) || { symbol: selectedCoin, lastPrice: '0', priceChangePercent: '0' };
+
+    // Fetch real ticker via WebSocket
+    const liveTicker = useTickerSocket(selectedCoin, isFutures ? 'futures' : 'spot', {
+        lastPrice: parseFloat(coin.lastPrice),
+        priceChangePercent: parseFloat(coin.priceChangePercent)
+    });
+
+    const lastPrice = liveTicker?.lastPrice || parseFloat(coin.lastPrice) || 0;
+    const priceChange = liveTicker?.priceChangePercent || parseFloat(coin.priceChangePercent) || 0;
+    const baseAsset = selectedCoin.replace('USDT', '').replace('BUSD', '');
 
     // Mock Futures Positions
     const futuresPositions = [
@@ -90,7 +105,10 @@ const TradeView = () => {
                     <ChevronDown size={16} className="text-slate-400" />
                 </div>
                 <div className="flex gap-4">
-                    <CandlestickChart size={24} className="text-slate-900" />
+                    <CandlestickChart size={24} className="text-slate-900 cursor-pointer" onClick={() => {
+                        useExchangeStore.setState({ tradeType: isFutures ? 'futures' : 'spot' });
+                        setActivePage('chart-trade');
+                    }} />
                     <PiDotsSixBold size={24} className="text-slate-900" />
                 </div>
             </div>
@@ -278,60 +296,44 @@ const TradeView = () => {
 
                     {/* Asks (Red) */}
                     <div className="space-y-[2px] mb-2">
-                        {[
-                            { p: '67,409.7', a: '1.91706', w: '100%' },
-                            { p: '67,409.8', a: '0.00025', w: '2%' },
-                            { p: '67,409.8', a: '0.00008', w: '1%' },
-                            { p: '67,410.0', a: '2.85454', w: '100%' },
-                            { p: '67,410.4', a: '0.28180', w: '15%' },
-                            { p: '67,410.5', a: '0.14858', w: '8%' },
-                            { p: '67,410.6', a: '0.00008', w: '1%' },
-                            { p: '67,410.7', a: '0.00012', w: '2%' },
-                            { p: '67,410.8', a: '0.00050', w: '5%' },
-                            { p: '67,410.9', a: '0.00020', w: '3%' },
-                            { p: '67,411.0', a: '0.00015', w: '2%' },
-                            { p: '67,411.2', a: '0.00030', w: '4%' },
-                        ].slice(0, orderBookRowCount).map((row, i) => (
-                            <div key={i} className="flex justify-between text-[11px] font-medium relative h-[18px] items-center">
-                                <div className="absolute right-0 top-0 bottom-0 bg-[#FF4D5B]/10" style={{ width: row.w }}></div>
-                                <span className="text-[#FF4D5B] relative z-10">{row.p}</span>
-                                <span className="text-slate-600 relative z-10">{row.a}</span>
-                            </div>
-                        ))}
+                        {orderBook.asks.slice(0, orderBookRowCount).reverse().map(([price, qty], i) => {
+                            const maxQty = Math.max(...orderBook.asks.slice(0, orderBookRowCount).map(a => parseFloat(a[1])), 0.0001);
+                            const pct = (parseFloat(qty) / maxQty) * 100;
+                            const p = parseFloat(price);
+                            return (
+                                <div key={`ask-${i}`} className="flex justify-between text-[11px] font-medium relative h-[18px] items-center">
+                                    <div className="absolute right-0 top-0 bottom-0 bg-[#FF4D5B]/10" style={{ width: `${pct}%` }}></div>
+                                    <span className="text-[#FF4D5B] relative z-10">{p >= 10 ? p.toLocaleString(undefined, { maximumFractionDigits: 2 }) : p.toLocaleString(undefined, { minimumFractionDigits: 4, maximumFractionDigits: 6 })}</span>
+                                    <span className="text-slate-600 relative z-10">{parseFloat(qty).toFixed(5)}</span>
+                                </div>
+                            );
+                        })}
                     </div>
 
                     {/* Current Price */}
                     <div className="my-1">
-                        <div className="text-lg font-bold text-[#00C076] leading-none flex items-center gap-1">
-                            67,384.0 <ChevronRight size={14} className="text-slate-400" />
+                        <div className={`text-lg font-bold leading-none flex items-center gap-1 ${priceChange >= 0 ? 'text-[#00C076]' : 'text-[#FF4D5B]'}`}>
+                            {lastPrice >= 10 ? lastPrice.toLocaleString(undefined, { maximumFractionDigits: 2 }) : lastPrice.toLocaleString(undefined, { minimumFractionDigits: 4, maximumFractionDigits: 6 })} <ChevronRight size={14} className="text-slate-400" />
                         </div>
                         <div className="text-[10px] font-medium text-slate-400">
-                            ≈ $67,384.00 <span className="text-[#00C076]">+2.17%</span>
+                            ≈ ${lastPrice >= 10 ? lastPrice.toLocaleString(undefined, { maximumFractionDigits: 2 }) : lastPrice.toLocaleString(undefined, { minimumFractionDigits: 4, maximumFractionDigits: 6 })} <span className={priceChange >= 0 ? 'text-[#00C076]' : 'text-[#FF4D5B]'}>{priceChange >= 0 ? '+' : ''}{priceChange.toFixed(2)}%</span>
                         </div>
                     </div>
 
                     {/* Bids (Green) */}
                     <div className="space-y-[2px] mt-2 mb-3">
-                        {[
-                            { p: '67,406.5', a: '0.01761', w: '5%' },
-                            { p: '67,406.0', a: '0.00028', w: '1%' },
-                            { p: '67,405.7', a: '0.00008', w: '1%' },
-                            { p: '67,405.6', a: '0.01817', w: '5%' },
-                            { p: '67,405.3', a: '0.00017', w: '1%' },
-                            { p: '67,405.0', a: '0.00008', w: '1%' },
-                            { p: '67,405.0', a: '0.00008', w: '1%' },
-                            { p: '67,404.8', a: '0.00015', w: '2%' },
-                            { p: '67,404.5', a: '0.00030', w: '3%' },
-                            { p: '67,404.2', a: '0.00010', w: '1%' },
-                            { p: '67,404.0', a: '0.00025', w: '2%' },
-                            { p: '67,403.8', a: '0.00040', w: '4%' },
-                        ].slice(0, orderBookRowCount).map((row, i) => (
-                            <div key={i} className="flex justify-between text-[11px] font-medium relative h-[18px] items-center">
-                                <div className="absolute right-0 top-0 bottom-0 bg-[#00C076]/10" style={{ width: row.w }}></div>
-                                <span className="text-[#00C076] relative z-10">{row.p}</span>
-                                <span className="text-slate-600 relative z-10">{row.a}</span>
-                            </div>
-                        ))}
+                        {orderBook.bids.slice(0, orderBookRowCount).map(([price, qty], i) => {
+                            const maxQty = Math.max(...orderBook.bids.slice(0, orderBookRowCount).map(b => parseFloat(b[1])), 0.0001);
+                            const pct = (parseFloat(qty) / maxQty) * 100;
+                            const p = parseFloat(price);
+                            return (
+                                <div key={`bid-${i}`} className="flex justify-between text-[11px] font-medium relative h-[18px] items-center">
+                                    <div className="absolute right-0 top-0 bottom-0 bg-[#00C076]/10" style={{ width: `${pct}%` }}></div>
+                                    <span className="text-[#00C076] relative z-10">{p >= 10 ? p.toLocaleString(undefined, { maximumFractionDigits: 2 }) : p.toLocaleString(undefined, { minimumFractionDigits: 4, maximumFractionDigits: 6 })}</span>
+                                    <span className="text-slate-600 relative z-10">{parseFloat(qty).toFixed(5)}</span>
+                                </div>
+                            );
+                        })}
                     </div>
 
                     {/* Buy/Sell Ratio */}

@@ -10,6 +10,14 @@ import trivLogo from '../assets/triv-logo.svg';
 import {
     FiSearch as Search,
     FiFilter as Filter,
+    FiMenu as Menu,
+    FiBell as Bell,
+    FiEye as Eye,
+    FiEyeOff as EyeOff,
+    FiGift as Gift,
+    FiGrid as Grid,
+    FiChevronUp as ChevronUp,
+    FiChevronDown as ChevronDown,
 } from 'react-icons/fi';
 import {
     MdLocalFireDepartment as Flame,
@@ -17,13 +25,18 @@ import {
 import { IoTicketOutline as Ticket } from 'react-icons/io5';
 import { PiHeadset as Headphones } from 'react-icons/pi';
 import { LuUser as User } from 'react-icons/lu';
-import { RxTriangleDown as ChevronDown } from 'react-icons/rx';
-import { FiEye as Eye, FiGift as Gift, FiGrid as Grid } from 'react-icons/fi';
+import { HiOutlineArrowDownTray as ArrowDownTray, HiOutlineArrowUpTray as ArrowUpTray, HiOutlineArrowsRightLeft as ArrowsRightLeft, HiOutlineChartBar as ChartBar, HiOutlineClock as Clock } from 'react-icons/hi2';
+import { PnLChart } from '../components/PnLChart';
+import { AutoShrink } from '../components/AutoShrink';
+import { formatCurrency, getCurrencySymbol } from '../utils/format';
 
 const HomeView = () => {
-    const { balance, todayPnl, pnlPercent, markets, setActivePage, setSearchOpen, homeFilter, setHomeFilter, favorites, currency, rates, setDepositOptionOpen } = useExchangeStore();
+    const { balance, todayPnl, pnlPercent, markets, setActivePage, setSearchOpen, homeFilter, setHomeFilter, favorites, currency: globalCurrency, rates, setDepositOptionOpen, hideBalance, setHideBalance } = useExchangeStore();
+    const currency = (globalCurrency === 'BTC' || globalCurrency === 'USDT') ? 'USD' : globalCurrency;
     const [isFavSheetOpen, setIsFavSheetOpen] = useState(false);
     const [favSubFilter, setFavSubFilter] = useState('All');
+    const [isPnlExpanded, setIsPnlExpanded] = useState(false);
+    const [pnlTimeframe, setPnlTimeframe] = useState('1D');
 
     const filteredMarkets = useMemo(() => {
         let list = [...markets];
@@ -57,6 +70,67 @@ const HomeView = () => {
     const displayBalance = useMemo(() => convertAmount(balance, currency, rates), [balance, currency, rates]);
     const displayPnl = useMemo(() => convertAmount(todayPnl, currency, rates), [todayPnl, currency, rates]);
 
+    // Generate stable noise factors tied to timeframe
+    const noiseFactors = useMemo(() => {
+        let pointsCount = 30;
+        let volatility = 0.02;
+
+        switch (pnlTimeframe) {
+            case '1D': pointsCount = 48; volatility = 0.002; break;
+            case '1W': pointsCount = 56; volatility = 0.006; break;
+            case '1M': pointsCount = 60; volatility = 0.012; break;
+            case '6M': pointsCount = 90; volatility = 0.03; break;
+            case '1Y': pointsCount = 120; volatility = 0.06; break;
+        }
+
+        const factors = new Array(pointsCount).fill(1);
+        let currentFactor = 1;
+        for (let i = pointsCount - 2; i >= 0; i--) {
+            const change = 1 + (Math.random() * volatility * 2 - volatility);
+            currentFactor = currentFactor / change;
+            factors[i] = currentFactor;
+        }
+        return factors;
+    }, [pnlTimeframe]);
+
+    // Generate mathematical PnL data based on balance, timeframe, and today's PnL
+    const chartData = useMemo(() => {
+        const endValue = parseFloat(String(displayBalance).replace(/,/g, '')) || 0;
+        const pnlValue = parseFloat(String(displayPnl).replace(/,/g, '')) * (todayPnl >= 0 ? 1 : -1) || 0;
+
+        const pointsCount = noiseFactors.length;
+        const result = new Array(pointsCount).fill(0);
+        result[pointsCount - 1] = endValue;
+
+        for (let i = 0; i < pointsCount - 1; i++) {
+            result[i] = Math.max(0, noiseFactors[i] * endValue);
+        }
+
+        // Anchor 1D strictly to today's PnL boundaries
+        if (pnlTimeframe === '1D') {
+            const startValue = endValue - pnlValue;
+            const generatedStart = result[0];
+            const generatedDiff = endValue - generatedStart;
+            const actualDiff = endValue - startValue;
+
+            for (let i = 0; i < pointsCount - 1; i++) {
+                const ratio = (result[i] - generatedStart) / (generatedDiff || 1);
+                result[i] = startValue + (ratio * actualDiff);
+            }
+        }
+
+        return result;
+    }, [displayBalance, displayPnl, todayPnl, pnlTimeframe, noiseFactors]);
+
+    const chartColor = useMemo(() => {
+        if (!chartData || chartData.length < 2) return '#00C076';
+        return chartData[chartData.length - 1] >= chartData[0] ? '#00C076' : '#FF4D5B';
+    }, [chartData]);
+
+    const formatLabel = (val: number) => {
+        return currency === 'IDR' ? `Rp${val.toLocaleString('id-ID', { maximumFractionDigits: 0 })}` : `$${val.toLocaleString('en-US', { maximumFractionDigits: 2 })}`;
+    };
+
     return (
         <div className="pb-24">
             <div className="sticky top-0 z-50 bg-white flex justify-between items-center px-4 py-4">
@@ -86,26 +160,98 @@ const HomeView = () => {
 
                 <div className="mb-8">
                     <div className="flex items-center gap-1.5 text-slate-500 text-sm font-medium mb-1">
-                        Est total value <Eye size={16} />
+                        Est total value
+                        <button onClick={() => setHideBalance(!hideBalance)} className="p-0.5 hover:bg-slate-100 rounded transition-colors">
+                            {hideBalance ? <EyeOff size={16} /> : <Eye size={16} />}
+                        </button>
                     </div>
-                    <div className="flex justify-between items-end mb-2">
-                        <div>
-                            <div className="flex items-baseline gap-2">
-                                <SlotTicker value={displayBalance} className="text-3xl font-bold tracking-tight text-slate-900" />
-                                <CurrencySelector />
+                    <div className="flex flex-col mb-6">
+                        <div className="flex justify-between items-end mb-2 gap-4">
+                            <div className="flex-1 min-w-0 max-w-[calc(100%-110px)]">
+                                <div className="flex items-baseline gap-1 mb-1">
+                                    <div className="inline-flex items-baseline min-w-0">
+                                        <AutoShrink>
+                                            {hideBalance ? (
+                                                <span className="text-[28px] font-bold tracking-tight text-slate-900 leading-none">******</span>
+                                            ) : (
+                                                <SlotTicker
+                                                    value={displayBalance}
+                                                    decimals={currency === 'IDR' ? 0 : 2}
+                                                    className="text-[28px] font-bold tracking-tight text-slate-900 leading-none"
+                                                />
+                                            )}
+                                        </AutoShrink>
+                                    </div>
+                                    <div className="flex-shrink-0">
+                                        <CurrencySelector />
+                                    </div>
+                                </div>
+                                <div className="text-sm font-medium flex items-center gap-1">
+                                    <span className="text-slate-500">Today's PnL</span>
+                                    <span className={todayPnl >= 0 ? "text-[#00C076]" : "text-[#FF4D5B]"}>
+                                        {hideBalance ? (
+                                            '******'
+                                        ) : (
+                                            <>
+                                                {todayPnl >= 0 ? '+' : '-'} <SlotTicker value={Math.abs(displayPnl)} decimals={currency === 'IDR' ? 0 : 2} className="inline-flex" /> ({todayPnl >= 0 ? '+' : ''}{pnlPercent}%)
+                                            </>
+                                        )}
+                                    </span>
+                                </div>
                             </div>
-                            <div className="text-sm font-medium mt-1 flex items-center gap-1">
-                                <span className="text-slate-500">Today's PnL</span>
-                                <span className={todayPnl >= 0 ? "text-[#00C076]" : "text-[#FF4D5B]"}>
-                                    {todayPnl >= 0 ? '+' : '-'} <SlotTicker value={Math.abs(displayPnl)} className="inline-flex" /> ({todayPnl >= 0 ? '+' : ''}{pnlPercent}%)
-                                </span>
+                            <div
+                                className={`w-20 h-8 overflow-visible mt-2 cursor-pointer transition-opacity duration-300 flex-shrink-0 flex items-end ${isPnlExpanded ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}
+                                onClick={() => setIsPnlExpanded(true)}
+                            >
+                                <PnLChart
+                                    data={chartData}
+                                    color={chartColor}
+                                    width={80}
+                                    height={32}
+                                    showDots={true}
+                                />
                             </div>
                         </div>
-                        <div className="w-24 h-10 text-[#00C076]">
-                            <svg viewBox="0 0 100 40" className="w-full h-full stroke-current fill-current/20" preserveAspectRatio="none">
-                                <path d="M0,30 L20,20 L40,25 L60,10 L80,15 L100,5 L100,40 L0,40 Z" stroke="none" />
-                                <path d="M0,30 L20,20 L40,25 L60,10 L80,15 L100,5" fill="none" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                            </svg>
+
+                        {/* Expandable PnL Section */}
+                        <div
+                            className={`overflow-hidden transition-all duration-500 ease-in-out ${isPnlExpanded ? 'max-h-[350px] opacity-100 mt-4' : 'max-h-0 opacity-0 mt-0 pointer-events-none'}`}
+                        >
+                            <div className="flex justify-between text-xs text-slate-400 font-medium mb-2 px-1">
+                                <span>
+                                    {pnlTimeframe === '1D' ? new Date(Date.now() - 24 * 60 * 60 * 1000).toLocaleDateString() :
+                                        pnlTimeframe === '1W' ? new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toLocaleDateString() :
+                                            pnlTimeframe === '1M' ? new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toLocaleDateString() :
+                                                pnlTimeframe === '6M' ? new Date(Date.now() - 180 * 24 * 60 * 60 * 1000).toLocaleDateString() :
+                                                    new Date(Date.now() - 365 * 24 * 60 * 60 * 1000).toLocaleDateString()}
+                                </span>
+                                <span>{new Date().toLocaleDateString()}</span>
+                            </div>
+                            <div className="flex justify-center -mx-4 h-[180px] items-center mb-6">
+                                <PnLChart
+                                    data={chartData}
+                                    color={chartColor}
+                                    width={360}
+                                    height={160}
+                                    showDots={true}
+                                    minLabel={formatLabel(Math.min(...chartData))}
+                                    maxLabel={formatLabel(Math.max(...chartData))}
+                                />
+                            </div>
+                            <div className="flex justify-center gap-1 border border-slate-100 rounded-full p-1 bg-white mx-4 shadow-sm relative z-10">
+                                {['1D', '1W', '1M', '6M', '1Y'].map(tf => (
+                                    <button
+                                        key={tf}
+                                        onClick={(e) => { e.stopPropagation(); setPnlTimeframe(tf); }}
+                                        className={`flex-1 py-1.5 text-xs font-bold rounded-full transition-colors ${tf === pnlTimeframe ? 'bg-[#F5F7F9] text-slate-900' : 'text-slate-400 hover:text-slate-600'}`}
+                                    >
+                                        {tf}
+                                    </button>
+                                ))}
+                            </div>
+                            <div className="flex justify-center mt-6 h-8 cursor-pointer items-end" onClick={(e) => { e.stopPropagation(); setIsPnlExpanded(false); }}>
+                                <ChevronUp className="text-slate-400" size={24} />
+                            </div>
                         </div>
                     </div>
 
@@ -191,13 +337,16 @@ const HomeView = () => {
                                                 </>
                                             )}
                                         </div>
-                                        <div className="text-xs text-slate-400 font-medium mt-0.5">${(parseFloat(coin.quoteVolume) / 1e9).toFixed(2)}B</div>
+                                        <div className="text-xs text-slate-400 font-medium mt-0.5 flex items-center gap-1">
+                                            <span className="text-slate-300">{getCurrencySymbol(currency)}</span>
+                                            {((parseFloat(coin.quoteVolume) * (rates[currency] || 1)) / 1e9).toFixed(2)}B
+                                        </div>
                                     </div>
                                 </div>
                                 <div className="flex items-center gap-4">
                                     <div className="text-right">
                                         <div className="font-bold text-base text-slate-900">{parseFloat(coin.lastPrice).toLocaleString()}</div>
-                                        <div className="text-xs text-slate-400 font-medium mt-0.5">${parseFloat(coin.lastPrice).toLocaleString()}</div>
+                                        <div className="text-xs text-slate-400 font-medium mt-0.5">{formatCurrency(parseFloat(coin.lastPrice), currency, rates)}</div>
                                     </div>
                                     <div className={`w-[72px] py-1.5 rounded text-sm font-bold text-center text-white ${parseFloat(coin.priceChangePercent) >= 0 ? 'bg-[#00C076]' : 'bg-[#FF4D5B]'}`}>
                                         {parseFloat(coin.priceChangePercent) > 0 ? '+' : ''}{parseFloat(coin.priceChangePercent).toFixed(2)}%

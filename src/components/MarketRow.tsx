@@ -1,6 +1,7 @@
-// @ts-nocheck
 import React from 'react';
 import CoinIcon from './CoinIcon';
+import useExchangeStore from '../stores/useExchangeStore';
+import { formatCurrency, getCurrencySymbol } from '../utils/format';
 
 interface MarketRowProps {
     coin: any;
@@ -9,6 +10,8 @@ interface MarketRowProps {
 }
 
 const MarketRow = React.memo(({ coin, showPerp = true, onClick }: MarketRowProps) => {
+    const { currency: globalCurrency, rates } = useExchangeStore();
+    const currency = (globalCurrency === 'BTC' || globalCurrency === 'USDT') ? 'USD' : globalCurrency;
     const changePercent = parseFloat(coin.priceChangePercent);
     const isPositive = changePercent >= 0;
 
@@ -29,15 +32,15 @@ const MarketRow = React.memo(({ coin, showPerp = true, onClick }: MarketRowProps
                         )}
                     </div>
                     <div className="text-xs text-slate-400 font-medium mt-0.5 flex items-center gap-1">
-                        <span className="text-slate-300">$</span>
-                        {(parseFloat(coin.quoteVolume) / 1e6).toLocaleString(undefined, { maximumFractionDigits: 2 })}M
+                        <span className="text-slate-300">{getCurrencySymbol(currency)}</span>
+                        {((parseFloat(coin.quoteVolume) * (rates[currency] || 1)) / 1e6).toLocaleString(undefined, { maximumFractionDigits: 2 })}M
                     </div>
                 </div>
             </div>
             <div className="flex items-center gap-4">
                 <div className="text-right">
                     <div className="font-bold text-[15px] text-slate-900">{parseFloat(coin.lastPrice).toLocaleString()}</div>
-                    <div className="text-xs text-slate-400 font-medium mt-0.5">${parseFloat(coin.lastPrice).toLocaleString()}</div>
+                    <div className="text-xs text-slate-400 font-medium mt-0.5">{formatCurrency(parseFloat(coin.lastPrice), currency, rates)}</div>
                 </div>
                 <div className={`w-[72px] py-2 rounded-lg text-[13px] font-bold text-center text-white ${isPositive ? 'bg-[#00C076]' : 'bg-[#FF4D5B]'}`}>
                     {changePercent > 0 ? '+' : ''}{changePercent.toFixed(2)}%

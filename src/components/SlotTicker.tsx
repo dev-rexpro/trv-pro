@@ -46,18 +46,11 @@ export const SlotTicker: React.FC<SlotTickerProps> = ({
     const [displayValue, setDisplayValue] = useState(value);
     const valueRef = useRef(value);
 
-    // Keep ref updated synchronously
+    // Update displayValue immediately when value prop changes
     useEffect(() => {
+        setDisplayValue(value);
         valueRef.current = value;
     }, [value]);
-
-    // Apply the requested interval specifically to the rolling slot animation
-    useEffect(() => {
-        const interval = setInterval(() => {
-            setDisplayValue(valueRef.current);
-        }, intervalMs);
-        return () => clearInterval(interval);
-    }, [intervalMs]);
 
     const formatted = useMemo(() => {
         return parseFloat(displayValue.toString()).toLocaleString('en-US', {
