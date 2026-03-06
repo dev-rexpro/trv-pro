@@ -29,14 +29,17 @@ import { HiOutlineArrowDownTray as ArrowDownTray, HiOutlineArrowUpTray as ArrowU
 import { PnLChart } from '../components/PnLChart';
 import { AutoShrink } from '../components/AutoShrink';
 import { formatCurrency, getCurrencySymbol } from '../utils/format';
+import ModeSelectorSheet from '../components/ModeSelectorSheet';
 
 const HomeView = () => {
-    const { balance, todayPnl, pnlPercent, markets, setActivePage, setSearchOpen, homeFilter, setHomeFilter, favorites, currency: globalCurrency, rates, setDepositOptionOpen, hideBalance, setHideBalance } = useExchangeStore();
+    const { balance, todayPnl, pnlPercent, markets, setActivePage, setSearchOpen, homeFilter, setHomeFilter, favorites, currency: globalCurrency, rates, setDepositOptionOpen, hideBalance, setHideBalance, getPnLForTimeframe } = useExchangeStore();
     const currency = (globalCurrency === 'BTC' || globalCurrency === 'USDT') ? 'USD' : globalCurrency;
     const [isFavSheetOpen, setIsFavSheetOpen] = useState(false);
     const [favSubFilter, setFavSubFilter] = useState('All');
     const [isPnlExpanded, setIsPnlExpanded] = useState(false);
     const [pnlTimeframe, setPnlTimeframe] = useState('1D');
+    const [isModeSheetOpen, setIsModeSheetOpen] = useState(false);
+    const [currentMode, setCurrentMode] = useState('Exchange');
 
     const filteredMarkets = useMemo(() => {
         let list = [...markets];
@@ -68,7 +71,19 @@ const HomeView = () => {
 
     // Convert balance to selected currency
     const displayBalance = useMemo(() => convertAmount(balance, currency, rates), [balance, currency, rates]);
-    const displayPnl = useMemo(() => convertAmount(todayPnl, currency, rates), [todayPnl, currency, rates]);
+
+    // Timeframe-aware PnL calculation (Real Logic)
+    const currentPnlData = useMemo(() => {
+        const pnl = getPnLForTimeframe(pnlTimeframe);
+        return {
+            value: pnl.value,
+            displayValue: convertAmount(Math.abs(pnl.value), currency, rates),
+            percent: pnl.percent
+        };
+    }, [getPnLForTimeframe, pnlTimeframe, currency, rates, balance, todayPnl]);
+
+    const displayPnl = currentPnlData.displayValue;
+    const pnlPercentDisplay = currentPnlData.percent;
 
     // Generate stable noise factors tied to timeframe
     const noiseFactors = useMemo(() => {
@@ -137,9 +152,12 @@ const HomeView = () => {
                 <div className="flex items-center">
                     <img src={trivLogo} alt="Triv" className="h-7" />
                 </div>
-                <div className="bg-[#F5F7F9] px-6 py-1.5 rounded-full flex items-center gap-3">
-                    <span className="text-sm font-bold text-slate-800">Exchange</span>
-                    <ChevronDown size={16} className="text-slate-500" />
+                <div
+                    onClick={() => setIsModeSheetOpen(true)}
+                    className="bg-[#F5F7F9] w-[150px] py-2 px-5 rounded-full flex items-center justify-center gap-2 cursor-pointer active:scale-95 transition-transform"
+                >
+                    <span className="text-[15px] font-bold text-slate-800">{currentMode}</span>
+                    <ChevronDown size={18} className="text-slate-500" />
                 </div>
                 <div className="flex gap-4 text-slate-800">
                     <Headphones size={24} strokeWidth={1.5} />
@@ -187,13 +205,13 @@ const HomeView = () => {
                                     </div>
                                 </div>
                                 <div className="text-sm font-medium flex items-center gap-1">
-                                    <span className="text-slate-500">Today's PnL</span>
-                                    <span className={todayPnl >= 0 ? "text-[#00C076]" : "text-[#FF4D5B]"}>
+                                    <span className="text-slate-500">{pnlTimeframe === '1D' ? "Today's" : pnlTimeframe} PnL</span>
+                                    <span className={currentPnlData.value >= 0 ? "text-[#00C076]" : "text-[#FF4D5B]"}>
                                         {hideBalance ? (
                                             '******'
                                         ) : (
                                             <>
-                                                {todayPnl >= 0 ? '+' : '-'} <SlotTicker value={Math.abs(displayPnl)} decimals={currency === 'IDR' ? 0 : 2} className="inline-flex" /> ({todayPnl >= 0 ? '+' : ''}{pnlPercent}%)
+                                                {currentPnlData.value >= 0 ? '+' : '-'} <SlotTicker value={Math.abs(displayPnl)} decimals={currency === 'IDR' ? 0 : 2} className="inline-flex" /> ({currentPnlData.value >= 0 ? '+' : ''}{pnlPercentDisplay}%)
                                             </>
                                         )}
                                     </span>
@@ -238,12 +256,12 @@ const HomeView = () => {
                                     maxLabel={formatLabel(Math.max(...chartData))}
                                 />
                             </div>
-                            <div className="flex justify-center gap-1 border border-slate-100 rounded-full p-1 bg-white mx-4 shadow-sm relative z-10">
+                            <div className="flex justify-center gap-1 bg-white mx-4 relative z-10">
                                 {['1D', '1W', '1M', '6M', '1Y'].map(tf => (
                                     <button
                                         key={tf}
                                         onClick={(e) => { e.stopPropagation(); setPnlTimeframe(tf); }}
-                                        className={`flex-1 py-1.5 text-xs font-bold rounded-full transition-colors ${tf === pnlTimeframe ? 'bg-[#F5F7F9] text-slate-900' : 'text-slate-400 hover:text-slate-600'}`}
+                                        className={`flex-1 py-1.5 text-xs font-bold rounded-full transition-colors ${tf === pnlTimeframe ? 'bg-[#F2F2F2] text-slate-900' : 'text-slate-400 hover:text-slate-600'}`}
                                     >
                                         {tf}
                                     </button>
@@ -338,8 +356,8 @@ const HomeView = () => {
                                             )}
                                         </div>
                                         <div className="text-xs text-slate-400 font-medium mt-0.5 flex items-center gap-1">
-                                            <span className="text-slate-300">{getCurrencySymbol(currency)}</span>
-                                            {((parseFloat(coin.quoteVolume) * (rates[currency] || 1)) / 1e9).toFixed(2)}B
+                                            <span className="text-slate-300">$</span>
+                                            {(parseFloat(coin.quoteVolume) / 1e9).toFixed(2)}B
                                         </div>
                                     </div>
                                 </div>
@@ -366,6 +384,13 @@ const HomeView = () => {
                     setFavSubFilter(val);
                     setIsFavSheetOpen(false);
                 }}
+            />
+
+            <ModeSelectorSheet
+                isOpen={isModeSheetOpen}
+                onClose={() => setIsModeSheetOpen(false)}
+                currentMode={currentMode}
+                onSelect={(mode) => setCurrentMode(mode)}
             />
         </div>
     );

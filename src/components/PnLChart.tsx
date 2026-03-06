@@ -68,12 +68,12 @@ export const PnLChart: React.FC<PnLChartProps> = ({
                         <stop offset="100%" stopColor={color} stopOpacity="0" />
                     </linearGradient>
 
-                    <pattern id={patternId} x="0" y="0" width="8" height="8" patternUnits="userSpaceOnUse">
-                        <circle cx="1.5" cy="1.5" r="1" fill={color} fillOpacity="0.4" />
+                    <pattern id={patternId} x="0" y="0" width="6" height="6" patternUnits="userSpaceOnUse">
+                        <circle cx="1.5" cy="1.5" r="0.8" fill={color} fillOpacity="0.4" />
                     </pattern>
 
                     <filter id={filterId} x="-20%" y="-20%" width="140%" height="140%">
-                        <feGaussianBlur stdDeviation="3.5" result="blur" />
+                        <feGaussianBlur stdDeviation="6" result="blur" />
                         <feComposite in="SourceGraphic" in2="blur" operator="over" />
                     </filter>
                 </defs>
@@ -92,10 +92,10 @@ export const PnLChart: React.FC<PnLChartProps> = ({
 
                 {/* Min/Max Labels */}
                 {maxLabel && maxPoint && (
-                    <text x={maxPoint.x} y={maxPoint.y - 10} fill="#94a3b8" fontSize="11" textAnchor={maxPoint.x > width * 0.8 ? 'end' : maxPoint.x < width * 0.2 ? 'start' : 'middle'}>{maxLabel}</text>
+                    <text x={maxPoint.x} y={maxPoint.y - 12} fill="#94a3b8" fontSize="13" fontWeight="500" textAnchor={maxPoint.x > width * 0.8 ? 'end' : maxPoint.x < width * 0.2 ? 'start' : 'middle'}>{maxLabel}</text>
                 )}
                 {minLabel && minPoint && (
-                    <text x={minPoint.x} y={minPoint.y + 16} fill="#94a3b8" fontSize="11" textAnchor={minPoint.x > width * 0.8 ? 'end' : minPoint.x < width * 0.2 ? 'start' : 'middle'}>{minLabel}</text>
+                    <text x={minPoint.x} y={minPoint.y + 20} fill="#94a3b8" fontSize="13" fontWeight="500" textAnchor={minPoint.x > width * 0.8 ? 'end' : minPoint.x < width * 0.2 ? 'start' : 'middle'}>{minLabel}</text>
                 )}
             </svg>
         </div>

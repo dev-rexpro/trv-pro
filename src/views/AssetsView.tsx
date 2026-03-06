@@ -180,7 +180,7 @@ const AssetsView = () => {
             <ConfirmDialog
                 isOpen={isConfirmOpen}
                 title="Reset Balances"
-                message="Are you sure you want to reset balances to default ($10,000 USD Spot / $5,000 USDT Futures)?"
+                message="Are you sure you want to reset balances to default (500 USDT Spot)?"
                 onConfirm={handleConfirmReset}
                 onCancel={() => setIsConfirmOpen(false)}
                 confirmText="Reset"
