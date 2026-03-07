@@ -7,6 +7,8 @@ import FavoritesBottomSheet from '../components/FavoritesBottomSheet';
 import { SlotTicker } from '../components/SlotTicker';
 import { convertAmount } from '../utils/format';
 import trivLogo from '../assets/triv-logo.svg';
+import ojkLogo from '../assets/ojk.png';
+import bappebtiLogo from '../assets/bappebti.png';
 import {
     FiSearch as Search,
     FiFilter as Filter,
@@ -26,6 +28,13 @@ import {
 import { IoTicketOutline as Ticket } from 'react-icons/io5';
 import { PiHeadset as Headphones } from 'react-icons/pi';
 import { LuUser as User, LuChevronUp, LuChevronDown } from 'react-icons/lu';
+import {
+    RiTelegramFill,
+    RiYoutubeFill,
+    RiFacebookBoxFill,
+    RiInstagramFill,
+    RiTiktokFill
+} from 'react-icons/ri';
 import { HiOutlineArrowDownTray as ArrowDownTray, HiOutlineArrowUpTray as ArrowUpTray, HiOutlineArrowsRightLeft as ArrowsRightLeft, HiOutlineChartBar as ChartBar, HiOutlineClock as Clock } from 'react-icons/hi2';
 import { PnLChart } from '../components/PnLChart';
 import { AutoShrink } from '../components/AutoShrink';
@@ -145,7 +154,7 @@ const HomeView = () => {
     };
 
     return (
-        <div className="pb-24 font-sans text-slate-900">
+        <div className="pb-20 font-sans text-slate-900">
             <div className="sticky top-0 z-50 bg-white flex justify-between items-center px-4 py-4">
                 <div className="flex items-center">
                     <img src={trivLogo} alt="Triv" className="h-7" />
@@ -164,21 +173,21 @@ const HomeView = () => {
             </div>
 
             <div className="px-4 mt-1">
-                <div className="relative mb-6" onClick={() => setSearchOpen(true)}>
+                <div className="relative mb-4" onClick={() => setSearchOpen(true)}>
                     <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
                     <div className="w-full bg-[#F5F7F9] border-none rounded-full py-3 pl-11 pr-4 h-[44px] flex items-center">
                         <AnimatedPlaceholder className="ml-0" />
                     </div>
                 </div>
 
-                <div className="mb-8">
+                <div className="mb-6">
                     <div className="flex items-center gap-1.5 text-slate-500 text-sm font-medium mb-1">
                         Est total value
                         <button onClick={() => setHideBalance(!hideBalance)} className="p-0.5 hover:bg-slate-100 rounded transition-colors">
                             {hideBalance ? <EyeOff size={16} /> : <Eye size={16} />}
                         </button>
                     </div>
-                    <div className="flex flex-col mb-6">
+                    <div className="flex flex-col mb-4">
                         <div className="flex justify-between items-end mb-2 gap-4">
                             <div className="flex-1 min-w-0 max-w-[calc(100%-110px)]">
                                 <div className="flex items-baseline gap-1 mb-1">
@@ -273,7 +282,7 @@ const HomeView = () => {
                     </div>
                 </div>
 
-                <div className="grid grid-cols-4 gap-4 mb-8">
+                <div className="grid grid-cols-4 gap-4 mb-6">
                     {[
                         { label: 'Earn', icon: <div className="relative"><div className="w-6 h-6 rounded-full border-2 border-slate-800 flex items-center justify-center text-[10px] font-bold">1</div><div className="absolute -top-1 -right-1 w-4 h-4 bg-white rounded-full border-2 border-slate-800 flex items-center justify-center"><div className="w-1.5 h-1.5 bg-slate-800 rounded-full" /></div></div> },
                         { label: 'My rewards', icon: <Ticket size={28} strokeWidth={1.5} className="text-slate-800" /> },
@@ -287,7 +296,7 @@ const HomeView = () => {
                     ))}
                 </div>
 
-                <div className="bg-[#F5F7F9] rounded-2xl p-4 flex justify-between items-center mb-8">
+                <div className="bg-[#F5F7F9] rounded-2xl p-4 flex justify-between items-center mb-6">
                     <div className="flex items-center gap-4">
                         <div className="relative w-12 h-12 flex items-center justify-center">
                             <div className="absolute inset-0 border border-slate-200 rounded-full" />
@@ -312,15 +321,22 @@ const HomeView = () => {
                             {['Favorites', 'Hot', 'New', 'Stocks', 'DEX'].map(tab => (
                                 <button
                                     key={tab}
-                                    onClick={() => {
-                                        setHomeFilter(tab);
-                                        if (tab === 'Favorites') setIsFavSheetOpen(true);
-                                    }}
+                                    onClick={() => setHomeFilter(tab)}
                                     className={`whitespace-nowrap relative ${homeFilter === tab ? 'text-slate-900 font-bold' : ''}`}
                                 >
                                     {tab === 'Favorites' ? (
                                         <div className={`px-3 py-1.5 rounded-full flex items-center gap-1 ${homeFilter === tab ? 'bg-[#F5F7F9]' : ''}`}>
-                                            Favorites <ChevronDown className="w-6 h-6" />
+                                            Favorites
+                                            <div
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    setHomeFilter('Favorites');
+                                                    setIsFavSheetOpen(true);
+                                                }}
+                                                className="p-0.5 hover:bg-slate-200 rounded-full transition-colors flex items-center justify-center -mr-1"
+                                            >
+                                                <ChevronDown className="w-5 h-5" />
+                                            </div>
                                         </div>
                                     ) : tab}
                                     {(tab === 'New' || tab === 'Stocks') && <div className="absolute -top-0.5 -right-1.5 w-1.5 h-1.5 bg-red-500 rounded-full" />}
@@ -342,7 +358,7 @@ const HomeView = () => {
                     </div>
 
                     <button
-                        onClick={() => setActivePage('markets')}
+                        onClick={() => setActivePage('market')}
                         className="w-full py-3 mt-2 text-[14px] font-bold text-slate-500 bg-[#F5F7F9] rounded-full hover:bg-slate-100 transition-colors"
                     >
                         View more
@@ -368,6 +384,37 @@ const HomeView = () => {
                 currentMode={currentMode}
                 onSelect={(mode) => setCurrentMode(mode)}
             />
+
+            <footer className="mt-0 mb-4 px-4 border-t border-slate-100 pt-3 pb-10 flex flex-col items-center text-center">
+                <div className="flex flex-col items-center gap-3 mb-10">
+                    <span className="text-[13px] font-medium text-slate-400">Licensed and supervised by</span>
+                    <div className="flex items-center gap-8 opacity-50 grayscale brightness-0">
+                        <img src={ojkLogo} alt="OJK" className="h-8 w-auto object-contain" />
+                        <img src={bappebtiLogo} alt="BAPPEBTI" className="h-7 w-auto object-contain" />
+                    </div>
+                </div>
+
+                <div className="flex flex-col items-center gap-2">
+                    <span className="text-[13px] font-medium text-slate-400">Find Us</span>
+                    <div className="flex items-center gap-5">
+                        <a href="#" className="text-black opacity-50 hover:scale-110 active:scale-95 transition-transform">
+                            <RiTelegramFill size={36} />
+                        </a>
+                        <a href="#" className="text-black opacity-50 hover:scale-110 active:scale-95 transition-transform">
+                            <RiYoutubeFill size={36} />
+                        </a>
+                        <a href="#" className="text-black opacity-50 hover:scale-110 active:scale-95 transition-transform">
+                            <RiFacebookBoxFill size={36} />
+                        </a>
+                        <a href="#" className="text-black opacity-50 hover:scale-110 active:scale-95 transition-transform">
+                            <RiTiktokFill size={36} />
+                        </a>
+                        <a href="#" className="text-black opacity-50 hover:scale-110 active:scale-95 transition-transform">
+                            <RiInstagramFill size={36} />
+                        </a>
+                    </div>
+                </div>
+            </footer>
         </div>
     );
 };
@@ -376,21 +423,26 @@ const NewsSection = () => {
     const [activeNewsTab, setActiveNewsTab] = useState('Announcements');
     const tabs = ['Announcements', 'Promotions', 'Events'];
 
+    const { setActivePage } = useExchangeStore();
+
     const announcements = [
         { id: 1, title: 'TRV Pro Lists ETH Layer 2 (L2) with Zero Fees', time: '2h ago', tag: 'New Listing' },
         { id: 2, title: 'System Upgrade Notice: Ongoing Maintenance', time: '5h ago', tag: 'System' },
         { id: 3, title: 'Binance Smart Chain (BSC) Wallet Maintenance', time: '1d ago', tag: 'Network' },
+        { id: 4, title: 'New Trading Pair: SOL/USDT Now Live', time: '2d ago', tag: 'Trade' },
+        { id: 5, title: 'Important: Identity Verification Level 3 Upgrade', time: '3d ago', tag: 'KYC' },
     ];
 
     const events = [
         { id: 1, title: 'Spring Trading Competition: Win $50,000', state: 'Live', players: '12,430' },
         { id: 2, title: 'Staking Gala: 28% APY on Native Tokens', state: 'Soon', players: '5,800' },
+        { id: 3, title: 'Jakarta Community Meetup: Crypto & Coffee', state: 'Register', players: '450' },
     ];
 
     const promotions = [
-        { id: 1, color: 'bg-gradient-to-br from-indigo-500 to-purple-600', title: 'Trade & Win $10,000' },
-        { id: 2, color: 'bg-gradient-to-br from-emerald-500 to-teal-600', title: 'Stake BTC. Earn 12% APY' },
-        { id: 3, color: 'bg-gradient-to-br from-amber-500 to-orange-600', title: 'New Listing: ETH Layer 2' },
+        { id: 1, color: 'bg-gradient-to-br from-indigo-500 to-purple-600', title: 'Trade & Win $10,000', description: 'Join our exclusive trading competition! Top 100 traders will share a massive $10,000 USDT prize pool based on trading volume.' },
+        { id: 2, color: 'bg-gradient-to-br from-emerald-500 to-teal-600', title: 'Stake BTC. Earn 12% APY', description: 'High-yield staking is here. Lock your BTC for 30 days and enjoy a premium 12% APY with daily reward distributions.' },
+        { id: 3, color: 'bg-gradient-to-br from-amber-500 to-orange-600', title: 'New Listing: ETH Layer 2', description: 'Experience the future of Ethereum with zero gas fees. Start trading ETH L2 tokens now and enjoy 0% maker fees for 7 days.' },
     ];
 
     const [currentPromo, setCurrentPromo] = useState(0);
@@ -403,22 +455,22 @@ const NewsSection = () => {
     }, [promotions.length]);
 
     return (
-        <div className="mt-12 mb-8">
-            <div className="flex gap-6 text-sm font-medium text-slate-500 overflow-x-auto no-scrollbar items-center mb-6">
+        <div className="mt-8 mb-6">
+            <div className="flex gap-6 text-sm font-medium text-slate-500 overflow-x-auto no-scrollbar items-center mb-4">
                 {tabs.map(tab => (
                     <button
                         key={tab}
                         onClick={() => setActiveNewsTab(tab)}
                         className={`whitespace-nowrap relative ${activeNewsTab === tab ? 'text-slate-900 font-bold' : ''}`}
                     >
-                        <div className={`px-3 py-2.5 rounded-full transition-colors ${activeNewsTab === tab ? 'bg-[#F5F7F9]' : ''}`}>
+                        <div className={`px-3 py-1.5 rounded-full transition-colors ${activeNewsTab === tab ? 'bg-[#F5F7F9]' : ''}`}>
                             {tab}
                         </div>
                     </button>
                 ))}
             </div>
 
-            <div className="h-[160px] relative">
+            <div className="h-[270px] relative">
                 <AnimatePresence mode="popLayout">
                     {activeNewsTab === 'Announcements' && (
                         <motion.div
@@ -448,7 +500,7 @@ const NewsSection = () => {
                             exit={{ opacity: 0, x: -20 }}
                             className="relative w-full absolute top-0 left-0"
                         >
-                            <div className="overflow-hidden rounded-xl aspect-[21/9] relative group mx-1">
+                            <div className="overflow-hidden rounded-xl aspect-[21/10] relative group mx-1">
                                 <motion.div
                                     key={currentPromo}
                                     drag="x"
@@ -482,6 +534,14 @@ const NewsSection = () => {
                                     ))}
                                 </div>
                             </div>
+                            <div className="mt-6 px-1 flex flex-col gap-1">
+                                <h4 className="text-[14px] font-bold text-slate-900 leading-tight">
+                                    {promotions[currentPromo].title}
+                                </h4>
+                                <p className="text-[12px] text-slate-500 leading-relaxed font-medium">
+                                    {promotions[currentPromo].description}
+                                </p>
+                            </div>
                         </motion.div>
                     )}
 
@@ -513,6 +573,7 @@ const NewsSection = () => {
             </div>
 
             <button
+                onClick={() => setActivePage('market')}
                 className="w-full py-3 mt-8 text-[14px] font-bold text-slate-500 bg-[#F5F7F9] rounded-full hover:bg-slate-100 transition-colors"
             >
                 View more

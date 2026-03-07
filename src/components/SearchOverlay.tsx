@@ -5,7 +5,7 @@ import useExchangeStore from '../stores/useExchangeStore';
 import { searchDexScreener, COIN_NAME_MAP } from '../utils/api';
 import CoinIcon from './CoinIcon';
 import { FiSearch as Search, FiTrash2 as Trash2, FiStar as Star } from 'react-icons/fi';
-import { MdOutlineArrowDropDown as ChevronDown } from 'react-icons/md';
+import { LuChevronDown } from 'react-icons/lu';
 import AnimatedPlaceholder from './AnimatedPlaceholder';
 
 const SearchOverlay = () => {
@@ -169,7 +169,7 @@ const SearchOverlay = () => {
                                             className="px-3 py-1.5 bg-[#F5F7F9] rounded-2xl text-[12px] font-semibold text-slate-800 flex items-center justify-center cursor-pointer hover:bg-slate-100 transition-colors"
                                             onClick={() => setIsHistoryExpanded(!isHistoryExpanded)}
                                         >
-                                            <ChevronDown size={18} strokeWidth={1.5} className={`transition-transform duration-200 ${isHistoryExpanded ? 'rotate-180' : ''}`} />
+                                            <LuChevronDown size={18} strokeWidth={1.5} className={`transition-transform duration-200 ${isHistoryExpanded ? 'rotate-180' : ''}`} />
                                         </button>
                                     )}
                                 </div>
