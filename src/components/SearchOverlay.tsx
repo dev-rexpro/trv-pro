@@ -4,12 +4,9 @@ import { motion } from 'motion/react';
 import useExchangeStore from '../stores/useExchangeStore';
 import { searchDexScreener, COIN_NAME_MAP } from '../utils/api';
 import CoinIcon from './CoinIcon';
-import {
-    FiSearch as Search,
-    FiTrash2 as Trash2,
-    FiStar as Star,
-} from 'react-icons/fi';
-import { RxTriangleDown as ChevronDown } from 'react-icons/rx';
+import { FiSearch as Search, FiTrash2 as Trash2, FiStar as Star } from 'react-icons/fi';
+import { MdOutlineArrowDropDown as ChevronDown } from 'react-icons/md';
+import AnimatedPlaceholder from './AnimatedPlaceholder';
 
 const SearchOverlay = () => {
     const { searchQuery, setSearchQuery, setSearchOpen, history, clearHistory, addToHistory, markets, futuresMarkets, spotSymbols, futuresSymbols, favorites, toggleFavorite, rates, currency, setActivePage, setTradeType } = useExchangeStore();
@@ -107,9 +104,8 @@ const SearchOverlay = () => {
     }, [searchQuery]);
 
     const handleCancel = useCallback(() => {
-        setSearchOpen(false);
-        setSearchQuery('');
-    }, [setSearchOpen, setSearchQuery]);
+        window.history.back();
+    }, []);
 
     return (
         <motion.div
@@ -117,18 +113,23 @@ const SearchOverlay = () => {
             animate={{ x: 0 }}
             exit={{ x: '100%' }}
             transition={{ type: 'tween', duration: 0.2, ease: 'easeOut' }}
-            className="fixed inset-0 bg-white z-[100] flex flex-col"
+            className="fixed inset-0 bg-white z-[300] flex flex-col"
         >
             <div className="p-4 flex items-center gap-4">
                 <div className="relative flex-1">
                     <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-800" size={18} strokeWidth={2.5} />
                     <input
                         autoFocus
-                        className="w-full bg-[#F5F7F9] border-none rounded-full py-2.5 pl-11 pr-4 text-[15px] font-medium placeholder:text-slate-400 focus:ring-0 focus:outline-none"
-                        placeholder="🔥 SOL frequently traded"
+                        className="w-full bg-[#F5F7F9] border-none rounded-full py-2.5 pl-11 pr-4 text-[15px] font-medium placeholder:text-transparent focus:ring-0 focus:outline-none"
+                        placeholder=""
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                     />
+                    {!searchQuery && (
+                        <div className="absolute left-11 top-1/2 -translate-y-1/2 right-4 h-full">
+                            <AnimatedPlaceholder />
+                        </div>
+                    )}
                     {isTyping && <div className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 border-2 border-slate-500 border-t-transparent rounded-full animate-spin"></div>}
                 </div>
                 <button onClick={handleCancel} className="text-[15px] font-bold text-slate-900">Cancel</button>

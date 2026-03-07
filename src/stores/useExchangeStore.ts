@@ -35,6 +35,7 @@ interface ExchangeState {
     rates: ExchangeRates;
     hideBalance: boolean;
     showOrderConfirmation: boolean;
+    futuresUnrealizedPnl: number;
 
     // Demo Engine State
     wallets: {
@@ -122,6 +123,7 @@ const useExchangeStore = create<ExchangeState>()(
             rates: { USD: 1, USDT: 1, IDR: 16300, BTC: 0.000015 },
             hideBalance: false,
             showOrderConfirmation: true,
+            futuresUnrealizedPnl: 0,
 
             // Demo Engine State Init
             wallets: {
@@ -462,17 +464,50 @@ const useExchangeStore = create<ExchangeState>()(
                         }
                     });
 
-                    // 2. --- Sync Futures Unrealized PnL ---
-                    const updatedPositions = positions.map(pos => {
+                    // 2. --- Sync Futures Unrealized PnL & Monitor Liquidations ---
+                    const updatedPositions = [];
+                    positions.forEach(pos => {
                         const market = futuresMarkets.find(m => m.symbol === pos.symbol);
                         if (market) {
                             const markPrice = parseFloat(market.lastPrice);
-                            const priceDiff = pos.side === 'Buy' ? (markPrice - pos.entryPrice) : (pos.entryPrice - markPrice);
-                            const pnl = priceDiff * pos.size;
-                            const pnlPercent = (pnl / pos.margin) * 100;
-                            return { ...pos, markPrice, pnl: parseFloat(pnl.toFixed(2)), pnlPercent: parseFloat(pnlPercent.toFixed(2)) };
+
+                            // Check for liquidation (Isolated Margin)
+                            const isLiquidated = pos.side === 'Buy'
+                                ? markPrice <= pos.liqPrice
+                                : markPrice >= pos.liqPrice;
+
+                            if (isLiquidated) {
+                                fillOccurred = true;
+                                // In this engine, margin is not deducted from wallet when opening.
+                                // So on liquidation, we must deduct the lost margin.
+                                updatedWallets.futures.USDT = (updatedWallets.futures.USDT || 0) - pos.margin;
+
+                                updatedTradeHistory.push({
+                                    id: `LIQ-${Date.now()}-${pos.id}`,
+                                    symbol: pos.symbol,
+                                    side: pos.side,
+                                    type: 'Liquidation',
+                                    price: markPrice,
+                                    amount: pos.size,
+                                    fee: 0,
+                                    pnl: -pos.margin,
+                                    timestamp: Date.now(),
+                                    status: 'Completed'
+                                });
+                            } else {
+                                const priceDiff = pos.side === 'Buy' ? (markPrice - pos.entryPrice) : (pos.entryPrice - markPrice);
+                                const pnl = priceDiff * pos.size;
+                                const pnlPercent = (pnl / pos.margin) * 100;
+                                updatedPositions.push({
+                                    ...pos,
+                                    markPrice,
+                                    pnl: parseFloat(pnl.toFixed(2)),
+                                    pnlPercent: parseFloat(pnlPercent.toFixed(2))
+                                });
+                            }
+                        } else {
+                            updatedPositions.push(pos);
                         }
-                        return pos;
                     });
 
                     // 3. --- Calculate Balances & Asset Values ---
@@ -513,7 +548,7 @@ const useExchangeStore = create<ExchangeState>()(
                     });
 
                     const totalValue = spotTotal + futuresTotal + earnTotal + totalFuturesUnrealizedPnl;
-                    const pnlPercentValue = totalValue > 0 ? (weightedPnl / totalValue) * 100 : 0;
+                    const pnlPercentValue = totalValue > 0 ? ((weightedPnl + totalFuturesUnrealizedPnl) / totalValue) * 100 : 0;
 
                     // 4. --- Update BTC Rate ---
                     const btcMarket = markets.find(m => m.symbol === 'BTCUSDT');
@@ -537,8 +572,9 @@ const useExchangeStore = create<ExchangeState>()(
                         spotBalance: spotTotal,
                         futuresBalance: futuresTotal,
                         earnBalance: earnTotal,
-                        todayPnl: weightedPnl,
+                        todayPnl: weightedPnl + totalFuturesUnrealizedPnl,
                         pnlPercent: parseFloat(pnlPercentValue.toFixed(2)),
+                        futuresUnrealizedPnl: totalFuturesUnrealizedPnl,
                         rates: newRates,
                         snapshots: nextSnapshots
                     };

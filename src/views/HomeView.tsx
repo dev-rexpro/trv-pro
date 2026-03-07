@@ -1,7 +1,7 @@
-// @ts-nocheck
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import useExchangeStore from '../stores/useExchangeStore';
 import CoinIcon from '../components/CoinIcon';
+import MarketRow from '../components/MarketRow';
 import CurrencySelector from '../components/CurrencySelector';
 import FavoritesBottomSheet from '../components/FavoritesBottomSheet';
 import { SlotTicker } from '../components/SlotTicker';
@@ -16,20 +16,23 @@ import {
     FiEyeOff as EyeOff,
     FiGift as Gift,
     FiGrid as Grid,
-    FiChevronUp as ChevronUp,
-    FiChevronDown as ChevronDown,
+    FiChevronRight as ChevronRight,
 } from 'react-icons/fi';
 import {
     MdLocalFireDepartment as Flame,
+    MdOutlineArrowDropUp as ChevronUp,
+    MdOutlineArrowDropDown as ChevronDown,
 } from 'react-icons/md';
 import { IoTicketOutline as Ticket } from 'react-icons/io5';
 import { PiHeadset as Headphones } from 'react-icons/pi';
-import { LuUser as User } from 'react-icons/lu';
+import { LuUser as User, LuChevronUp, LuChevronDown } from 'react-icons/lu';
 import { HiOutlineArrowDownTray as ArrowDownTray, HiOutlineArrowUpTray as ArrowUpTray, HiOutlineArrowsRightLeft as ArrowsRightLeft, HiOutlineChartBar as ChartBar, HiOutlineClock as Clock } from 'react-icons/hi2';
 import { PnLChart } from '../components/PnLChart';
 import { AutoShrink } from '../components/AutoShrink';
-import { formatCurrency, getCurrencySymbol } from '../utils/format';
+import { formatCurrency, getCurrencySymbol, formatPrice } from '../utils/format';
 import ModeSelectorSheet from '../components/ModeSelectorSheet';
+import AnimatedPlaceholder from '../components/AnimatedPlaceholder';
+import { motion, AnimatePresence } from 'framer-motion';
 
 const HomeView = () => {
     const { balance, todayPnl, pnlPercent, markets, setActivePage, setSearchOpen, homeFilter, setHomeFilter, favorites, currency: globalCurrency, rates, setDepositOptionOpen, hideBalance, setHideBalance, getPnLForTimeframe } = useExchangeStore();
@@ -69,10 +72,8 @@ const HomeView = () => {
         setActivePage('trade');
     }, [setActivePage]);
 
-    // Convert balance to selected currency
     const displayBalance = useMemo(() => convertAmount(balance, currency, rates), [balance, currency, rates]);
 
-    // Timeframe-aware PnL calculation (Real Logic)
     const currentPnlData = useMemo(() => {
         const pnl = getPnLForTimeframe(pnlTimeframe);
         return {
@@ -85,7 +86,6 @@ const HomeView = () => {
     const displayPnl = currentPnlData.displayValue;
     const pnlPercentDisplay = currentPnlData.percent;
 
-    // Generate stable noise factors tied to timeframe
     const noiseFactors = useMemo(() => {
         let pointsCount = 30;
         let volatility = 0.02;
@@ -108,7 +108,6 @@ const HomeView = () => {
         return factors;
     }, [pnlTimeframe]);
 
-    // Generate mathematical PnL data based on balance, timeframe, and today's PnL
     const chartData = useMemo(() => {
         const endValue = parseFloat(String(displayBalance).replace(/,/g, '')) || 0;
         const pnlValue = parseFloat(String(displayPnl).replace(/,/g, '')) * (todayPnl >= 0 ? 1 : -1) || 0;
@@ -121,7 +120,6 @@ const HomeView = () => {
             result[i] = Math.max(0, noiseFactors[i] * endValue);
         }
 
-        // Anchor 1D strictly to today's PnL boundaries
         if (pnlTimeframe === '1D') {
             const startValue = endValue - pnlValue;
             const generatedStart = result[0];
@@ -147,17 +145,17 @@ const HomeView = () => {
     };
 
     return (
-        <div className="pb-24">
+        <div className="pb-24 font-sans text-slate-900">
             <div className="sticky top-0 z-50 bg-white flex justify-between items-center px-4 py-4">
                 <div className="flex items-center">
                     <img src={trivLogo} alt="Triv" className="h-7" />
                 </div>
                 <div
                     onClick={() => setIsModeSheetOpen(true)}
-                    className="bg-[#F5F7F9] w-[150px] py-2 px-5 rounded-full flex items-center justify-center gap-2 cursor-pointer active:scale-95 transition-transform"
+                    className="bg-[#F5F7F9] w-[140px] py-1 px-4 rounded-full flex items-center justify-center gap-1 cursor-pointer active:scale-95 transition-transform"
                 >
-                    <span className="text-[15px] font-bold text-slate-800">{currentMode}</span>
-                    <ChevronDown size={18} className="text-slate-500" />
+                    <span className="text-[14px] font-bold text-slate-800">{currentMode}</span>
+                    <ChevronDown className="w-6 h-6 text-slate-500" />
                 </div>
                 <div className="flex gap-4 text-slate-800">
                     <Headphones size={24} strokeWidth={1.5} />
@@ -168,12 +166,9 @@ const HomeView = () => {
             <div className="px-4 mt-1">
                 <div className="relative mb-6" onClick={() => setSearchOpen(true)}>
                     <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-                    <Flame className="absolute left-10 top-1/2 -translate-y-1/2 text-orange-500" size={16} />
-                    <input
-                        readOnly
-                        className="w-full bg-[#F5F7F9] border-none rounded-full py-3 pl-16 pr-4 text-sm font-medium text-slate-500 outline-none"
-                        placeholder="SOL frequently traded"
-                    />
+                    <div className="w-full bg-[#F5F7F9] border-none rounded-full py-3 pl-11 pr-4 h-[44px] flex items-center">
+                        <AnimatedPlaceholder className="ml-0" />
+                    </div>
                 </div>
 
                 <div className="mb-8">
@@ -218,7 +213,7 @@ const HomeView = () => {
                                 </div>
                             </div>
                             <div
-                                className={`w-20 h-8 overflow-visible mt-2 cursor-pointer transition-opacity duration-300 flex-shrink-0 flex items-end ${isPnlExpanded ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}
+                                className={`w-20 h-8 overflow-visible mt-0 -translate-y-2 cursor-pointer transition-opacity duration-300 flex-shrink-0 flex items-end ${isPnlExpanded ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}
                                 onClick={() => setIsPnlExpanded(true)}
                             >
                                 <PnLChart
@@ -231,7 +226,6 @@ const HomeView = () => {
                             </div>
                         </div>
 
-                        {/* Expandable PnL Section */}
                         <div
                             className={`overflow-hidden transition-all duration-500 ease-in-out ${isPnlExpanded ? 'max-h-[350px] opacity-100 mt-4' : 'max-h-0 opacity-0 mt-0 pointer-events-none'}`}
                         >
@@ -268,7 +262,7 @@ const HomeView = () => {
                                 ))}
                             </div>
                             <div className="flex justify-center mt-6 h-8 cursor-pointer items-end" onClick={(e) => { e.stopPropagation(); setIsPnlExpanded(false); }}>
-                                <ChevronUp className="text-slate-400" size={24} />
+                                <LuChevronUp className="text-slate-400" size={24} />
                             </div>
                         </div>
                     </div>
@@ -326,7 +320,7 @@ const HomeView = () => {
                                 >
                                     {tab === 'Favorites' ? (
                                         <div className={`px-3 py-1.5 rounded-full flex items-center gap-1 ${homeFilter === tab ? 'bg-[#F5F7F9]' : ''}`}>
-                                            Favorites <ChevronDown size={14} />
+                                            Favorites <ChevronDown className="w-6 h-6" />
                                         </div>
                                     ) : tab}
                                     {(tab === 'New' || tab === 'Stocks') && <div className="absolute -top-0.5 -right-1.5 w-1.5 h-1.5 bg-red-500 rounded-full" />}
@@ -336,44 +330,26 @@ const HomeView = () => {
                         <Filter size={16} className="text-slate-400" />
                     </div>
 
-                    <div className="space-y-6 mt-2">
-                        {filteredMarkets.slice(0, 10).map(coin => (
-                            <div key={coin.symbol} onClick={() => handleCoinClick(coin.symbol)} className="flex justify-between items-center">
-                                <div className="flex items-center gap-3">
-                                    <CoinIcon symbol={coin.symbol} size={8} />
-                                    <div>
-                                        <div className="flex items-center gap-1.5">
-                                            {coin.symbol.endsWith('USDT') ? (
-                                                <>
-                                                    <span className="font-bold text-base text-slate-900 uppercase">{coin.symbol}</span>
-                                                    <span className="text-[11px] bg-[#FFF8E6] text-orange-500 px-1.5 py-0.5 rounded font-bold uppercase leading-none">Perp</span>
-                                                </>
-                                            ) : (
-                                                <>
-                                                    <span className="font-bold text-base text-slate-900 uppercase">{coin.symbol.replace('USDT', '')}</span>
-                                                    <span className="text-[12px] text-slate-300 font-medium">/USDT</span>
-                                                </>
-                                            )}
-                                        </div>
-                                        <div className="text-xs text-slate-400 font-medium mt-0.5 flex items-center gap-1">
-                                            <span className="text-slate-300">$</span>
-                                            {(parseFloat(coin.quoteVolume) / 1e9).toFixed(2)}B
-                                        </div>
-                                    </div>
-                                </div>
-                                <div className="flex items-center gap-4">
-                                    <div className="text-right">
-                                        <div className="font-bold text-base text-slate-900">{parseFloat(coin.lastPrice).toLocaleString()}</div>
-                                        <div className="text-xs text-slate-400 font-medium mt-0.5">{formatCurrency(parseFloat(coin.lastPrice), currency, rates)}</div>
-                                    </div>
-                                    <div className={`w-[72px] py-1.5 rounded text-sm font-bold text-center text-white ${parseFloat(coin.priceChangePercent) >= 0 ? 'bg-[#00C076]' : 'bg-[#FF4D5B]'}`}>
-                                        {parseFloat(coin.priceChangePercent) > 0 ? '+' : ''}{parseFloat(coin.priceChangePercent).toFixed(2)}%
-                                    </div>
-                                </div>
-                            </div>
+                    <div className="mt-2 space-y-1">
+                        {filteredMarkets.slice(0, 7).map(coin => (
+                            <MarketRow
+                                key={coin.symbol}
+                                coin={coin}
+                                showPerp={coin.symbol.endsWith('USDT')}
+                                onClick={() => handleCoinClick(coin.symbol)}
+                            />
                         ))}
                     </div>
+
+                    <button
+                        onClick={() => setActivePage('markets')}
+                        className="w-full py-3 mt-2 text-[14px] font-bold text-slate-500 bg-[#F5F7F9] rounded-full hover:bg-slate-100 transition-colors"
+                    >
+                        View more
+                    </button>
                 </div>
+
+                <NewsSection />
             </div>
 
             <FavoritesBottomSheet
@@ -392,6 +368,155 @@ const HomeView = () => {
                 currentMode={currentMode}
                 onSelect={(mode) => setCurrentMode(mode)}
             />
+        </div>
+    );
+};
+
+const NewsSection = () => {
+    const [activeNewsTab, setActiveNewsTab] = useState('Announcements');
+    const tabs = ['Announcements', 'Promotions', 'Events'];
+
+    const announcements = [
+        { id: 1, title: 'TRV Pro Lists ETH Layer 2 (L2) with Zero Fees', time: '2h ago', tag: 'New Listing' },
+        { id: 2, title: 'System Upgrade Notice: Ongoing Maintenance', time: '5h ago', tag: 'System' },
+        { id: 3, title: 'Binance Smart Chain (BSC) Wallet Maintenance', time: '1d ago', tag: 'Network' },
+    ];
+
+    const events = [
+        { id: 1, title: 'Spring Trading Competition: Win $50,000', state: 'Live', players: '12,430' },
+        { id: 2, title: 'Staking Gala: 28% APY on Native Tokens', state: 'Soon', players: '5,800' },
+    ];
+
+    const promotions = [
+        { id: 1, color: 'bg-gradient-to-br from-indigo-500 to-purple-600', title: 'Trade & Win $10,000' },
+        { id: 2, color: 'bg-gradient-to-br from-emerald-500 to-teal-600', title: 'Stake BTC. Earn 12% APY' },
+        { id: 3, color: 'bg-gradient-to-br from-amber-500 to-orange-600', title: 'New Listing: ETH Layer 2' },
+    ];
+
+    const [currentPromo, setCurrentPromo] = useState(0);
+
+    useEffect(() => {
+        const timer = setInterval(() => {
+            setCurrentPromo(prev => (prev + 1) % promotions.length);
+        }, 5000);
+        return () => clearInterval(timer);
+    }, [promotions.length]);
+
+    return (
+        <div className="mt-12 mb-8">
+            <div className="flex gap-6 text-sm font-medium text-slate-500 overflow-x-auto no-scrollbar items-center mb-6">
+                {tabs.map(tab => (
+                    <button
+                        key={tab}
+                        onClick={() => setActiveNewsTab(tab)}
+                        className={`whitespace-nowrap relative ${activeNewsTab === tab ? 'text-slate-900 font-bold' : ''}`}
+                    >
+                        <div className={`px-3 py-2.5 rounded-full transition-colors ${activeNewsTab === tab ? 'bg-[#F5F7F9]' : ''}`}>
+                            {tab}
+                        </div>
+                    </button>
+                ))}
+            </div>
+
+            <div className="h-[160px] relative">
+                <AnimatePresence mode="popLayout">
+                    {activeNewsTab === 'Announcements' && (
+                        <motion.div
+                            key="announcements"
+                            initial={{ opacity: 0, x: 20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            exit={{ opacity: 0, x: -20 }}
+                            className="space-y-4 w-full absolute top-0 left-0"
+                        >
+                            {announcements.map(item => (
+                                <div key={item.id} className="flex flex-col gap-1 cursor-pointer group">
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 bg-slate-50 px-1.5 py-0.5 rounded">{item.tag}</span>
+                                        <span className="text-[11px] text-slate-400 font-medium">{item.time}</span>
+                                    </div>
+                                    <h4 className="text-[14px] font-bold text-slate-800 line-clamp-1 group-hover:text-slate-900 transition-colors">{item.title}</h4>
+                                </div>
+                            ))}
+                        </motion.div>
+                    )}
+
+                    {activeNewsTab === 'Promotions' && (
+                        <motion.div
+                            key="promotions"
+                            initial={{ opacity: 0, x: 20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            exit={{ opacity: 0, x: -20 }}
+                            className="relative w-full absolute top-0 left-0"
+                        >
+                            <div className="overflow-hidden rounded-xl aspect-[21/9] relative group mx-1">
+                                <motion.div
+                                    key={currentPromo}
+                                    drag="x"
+                                    dragConstraints={{ left: 0, right: 0 }}
+                                    onDragEnd={(_, info) => {
+                                        if (info.offset.x < -50) setCurrentPromo(prev => (prev + 1) % promotions.length);
+                                        if (info.offset.x > 50) setCurrentPromo(prev => (prev - 1 + promotions.length) % promotions.length);
+                                    }}
+                                    initial={{ opacity: 0, x: '100%' }}
+                                    animate={{ opacity: 1, x: 0 }}
+                                    exit={{ opacity: 0, x: '-100%' }}
+                                    transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+                                    className={`w-full h-full ${promotions[currentPromo].color} flex flex-col justify-center px-8 text-white absolute inset-0 cursor-grab active:cursor-grabbing`}
+                                >
+                                    <div className="absolute inset-0 bg-black/10 pointer-events-none" />
+                                    <span className="text-[12px] font-bold uppercase tracking-wider opacity-80 mb-1">Featured</span>
+                                    <h3 className="text-[20px] font-black leading-tight max-w-[200px] drop-shadow-sm">
+                                        {promotions[currentPromo].title}
+                                    </h3>
+                                    <div className="mt-4">
+                                        <button className="bg-white text-black text-[11px] font-bold px-4 py-1.5 rounded-full">Apply Now</button>
+                                    </div>
+                                </motion.div>
+                                <div className="absolute bottom-3 left-6 flex gap-1.5 z-20">
+                                    {promotions.map((_, idx) => (
+                                        <button
+                                            key={idx}
+                                            onClick={() => setCurrentPromo(idx)}
+                                            className={`w-1 h-1 rounded-full transition-all ${currentPromo === idx ? 'bg-white w-4' : 'bg-white/40'}`}
+                                        />
+                                    ))}
+                                </div>
+                            </div>
+                        </motion.div>
+                    )}
+
+                    {activeNewsTab === 'Events' && (
+                        <motion.div
+                            key="events"
+                            initial={{ opacity: 0, x: 20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            exit={{ opacity: 0, x: -20 }}
+                            className="space-y-3 w-full absolute top-0 left-0"
+                        >
+                            {events.map(item => (
+                                <div key={item.id} className="bg-[#F5F7F9] p-4 rounded-2xl flex justify-between items-center group cursor-pointer hover:bg-slate-100 transition-colors">
+                                    <div>
+                                        <h4 className="text-[15px] font-bold text-slate-900 mb-1">{item.title}</h4>
+                                        <div className="flex items-center gap-3">
+                                            <span className={`text-[11px] font-bold px-1.5 py-0.5 rounded-md ${item.state === 'Live' ? 'bg-[#e5f7ed] text-[#20b26c]' : item.state === 'Soon' ? 'bg-[#fff7e6] text-[#ff9900]' : 'bg-blue-50 text-blue-600'}`}>
+                                                {item.state}
+                                            </span>
+                                            <span className="text-[11px] text-slate-400 font-medium">{item.players} participants</span>
+                                        </div>
+                                    </div>
+                                    <ChevronRight className="w-5 h-5 text-slate-300 group-hover:text-slate-500 transition-colors" />
+                                </div>
+                            ))}
+                        </motion.div>
+                    )}
+                </AnimatePresence>
+            </div>
+
+            <button
+                className="w-full py-3 mt-8 text-[14px] font-bold text-slate-500 bg-[#F5F7F9] rounded-full hover:bg-slate-100 transition-colors"
+            >
+                View more
+            </button>
         </div>
     );
 };

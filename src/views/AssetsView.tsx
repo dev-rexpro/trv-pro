@@ -16,7 +16,7 @@ import {
 } from 'react-icons/fi';
 import { LuTimerReset as TimerReset } from 'react-icons/lu';
 import { FaCoins as Coins } from 'react-icons/fa';
-import { RxTriangleDown as ChevronDown } from 'react-icons/rx';
+import { MdOutlineArrowDropDown as ChevronDown } from 'react-icons/md';
 import { RiPlayListAddFill as MoreHorizontal } from 'react-icons/ri';
 import { MdHistory as History } from 'react-icons/md';
 import { AutoShrink } from '../components/AutoShrink';
@@ -30,7 +30,7 @@ const AssetsView = () => {
     const {
         balance, spotBalance, futuresBalance, earnBalance, todayPnl, pnlPercent,
         assets, rates, currency, setDepositOptionOpen, setActivePage, resetWallets,
-        hideBalance, setHideBalance
+        hideBalance, setHideBalance, futuresUnrealizedPnl
     } = useExchangeStore();
     const liveSpotBalance = spotBalance;
     const totalBalance = balance;
@@ -39,7 +39,8 @@ const AssetsView = () => {
     const pnlPrefixSymbol = pnl >= 0 ? '+' : '';
     const sortedAssets = [...assets].sort((a, b) => b.valueUsdt - a.valueUsdt);
     const filteredAssets = hideZero ? sortedAssets.filter(a => a.valueUsdt > 0) : sortedAssets;
-    const displayBalance = activeTab === 'Overview' ? totalBalance : activeTab === 'Spot' ? liveSpotBalance : activeTab === 'Futures' ? futuresBalance : 0;
+    const liveFuturesBalance = futuresBalance + futuresUnrealizedPnl;
+    const displayBalance = activeTab === 'Overview' ? totalBalance : activeTab === 'Spot' ? liveSpotBalance : activeTab === 'Futures' ? liveFuturesBalance : 0;
     const convertedBalance = useMemo(() => convertAmount(displayBalance, currency, rates), [displayBalance, currency, rates]);
     const convertedPnl = useMemo(() => convertAmount(pnl, currency, rates), [pnl, currency, rates]);
     const secondaryCurrency = currency === 'IDR' ? 'USD' : 'IDR';
@@ -57,7 +58,7 @@ const AssetsView = () => {
         <div className={`flex flex-col w-full min-h-screen bg-[#FDFDFD] text-slate-900 font-sans ${activeTab === 'Overview' ? 'pb-[220px]' : 'pb-24'}`}>
             <div className="bg-white sticky top-0 z-50">
                 <div className="px-4 pt-4 pb-2 flex justify-between items-center">
-                    <div className="flex gap-5 text-[18px] font-bold text-slate-400 overflow-x-auto no-scrollbar">
+                    <div className="flex gap-5 text-[18px] font-medium text-slate-400 overflow-x-auto no-scrollbar">
                         {['Overview', 'Spot', 'Futures', 'Earn'].map((tab) => (
                             <span key={tab} onClick={() => setActiveTab(tab)} className={`cursor-pointer whitespace-nowrap ${tab === activeTab ? 'text-slate-900' : ''}`}>{tab}</span>
                         ))}
@@ -116,7 +117,12 @@ const AssetsView = () => {
                     ) : activeTab === 'Futures' ? (
                         <div className="flex items-center text-[12px] font-medium inline-flex cursor-pointer group">
                             <span className="text-slate-400 border-b border-dashed border-slate-300 mr-2">Today's PnL</span>
-                            {!hideBalance ? <div className="text-slate-500 flex items-center"><span><SlotTicker value={0} decimals={2} /></span><span className="ml-1">(0.00%)</span></div> : <span className="text-slate-400">******</span>}
+                            {!hideBalance ? (
+                                <div className={`${futuresUnrealizedPnl >= 0 ? 'text-[#00C076]' : 'text-[#FF4D5B]'} flex items-center`}>
+                                    <span>{futuresUnrealizedPnl >= 0 ? '+' : ''}<SlotTicker value={Math.abs(convertAmount(futuresUnrealizedPnl, currency, rates))} decimals={currency === 'IDR' ? 0 : 2} className="inline-flex" /></span>
+                                    <span className="ml-1">({futuresUnrealizedPnl >= 0 ? '+' : ''}{((futuresUnrealizedPnl / futuresBalance) * 100 || 0).toFixed(2)}%)</span>
+                                </div>
+                            ) : <span className="text-slate-400">******</span>}
                             <ChevronRight size={12} className="text-slate-300 ml-1" />
                         </div>
                     ) : (
@@ -174,6 +180,7 @@ const AssetsView = () => {
                     hideZero={hideZero}
                     currency={currency}
                     rates={rates}
+                    futuresUnrealizedPnl={futuresUnrealizedPnl}
                 />
             </div>
 
@@ -192,7 +199,7 @@ const AssetsView = () => {
                         initial={{ opacity: 0, y: 50 }}
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: 50 }}
-                        className="fixed bottom-[100px] left-1/2 -translate-x-1/2 bg-[#121212] flex items-center gap-2 text-white px-5 py-3 rounded-full shadow-[0_10px_30px_rgba(0,0,0,0.15)] z-[100] text-[13px] font-bold whitespace-nowrap"
+                        className="fixed bottom-[100px] left-1/2 -translate-x-1/2 bg-[#121212] flex items-center gap-2 text-white px-5 py-3 rounded-full shadow-[0_10px_30px_rgba(0,0,0,0.15)] z-[1000] text-[13px] font-bold whitespace-nowrap"
                     >
                         <Check size={16} className="text-[#00C076]" />
                         {toastMessage}
@@ -203,7 +210,7 @@ const AssetsView = () => {
     );
 };
 
-const AssetList = React.memo(({ activeTab, setActiveTab, hideBalance, liveSpotBalance, futuresBalance, earnBalance, filteredAssets, hideZero, currency, rates }: any) => {
+const AssetList = React.memo(({ activeTab, setActiveTab, hideBalance, liveSpotBalance, futuresBalance, earnBalance, filteredAssets, hideZero, currency, rates, futuresUnrealizedPnl }: any) => {
     const secondaryCurrency = currency === 'IDR' ? 'USD' : 'IDR';
     const secondaryRate = rates?.[secondaryCurrency] || (secondaryCurrency === 'IDR' ? 16300 : 1);
     const secondarySymbol = secondaryCurrency === 'IDR' ? 'Rp' : '$';
@@ -214,7 +221,7 @@ const AssetList = React.memo(({ activeTab, setActiveTab, hideBalance, liveSpotBa
     return (
         <div className="flex flex-col gap-6">
             {activeTab === 'Overview' ? <>
-                {[{ name: 'Spot', balance: liveSpotBalance }, { name: 'Futures', balance: futuresBalance }, { name: 'Earn', balance: earnBalance }].map(port => (
+                {[{ name: 'Spot', balance: liveSpotBalance }, { name: 'Futures', balance: futuresBalance + futuresUnrealizedPnl }, { name: 'Earn', balance: earnBalance }].map(port => (
                     <div key={`port-${port.name}`} className="flex justify-between items-center cursor-pointer" onClick={() => setActiveTab(port.name)}>
                         <div className="flex items-center gap-3"><div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 font-bold text-sm">{port.name[0]}</div><div className="flex flex-col"><span className="font-bold text-[15px] text-slate-900">{port.name}</span></div></div>
                         <div className="flex flex-col items-end"><span className="font-bold text-[15px] text-slate-900 tabular-nums">{!hideBalance ? (currency === 'IDR' ? (port.balance * rates?.IDR).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 }) : port.balance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })) : '******'}</span><span className="text-[12px] text-slate-400 font-medium tabular-nums mt-0.5">{!hideBalance ? <span>{secondarySymbol}<SlotTicker value={port.balance * secondaryRate} decimals={secondaryCurrency === 'IDR' ? 0 : 2} className="inline-flex" /></span> : '******'}</span></div>
@@ -233,7 +240,23 @@ const AssetList = React.memo(({ activeTab, setActiveTab, hideBalance, liveSpotBa
                 </div>
             )) : activeTab === 'Futures' ? <>
                 {(!hideZero || futuresBalance > 0) && (
-                    <div className="flex justify-between items-center cursor-pointer"><div className="flex items-center gap-3"><CoinIcon symbol="USDT" size={8} /><div className="flex flex-col"><span className="font-bold text-[15px] text-slate-900">USDT</span></div></div><div className="flex flex-col items-end"><span className="font-bold text-[15px] text-slate-900 tabular-nums">{!hideBalance ? futuresBalance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '******'}</span><span className="text-[12px] text-slate-400 font-medium tabular-nums mt-0.5">{!hideBalance ? <span>{primarySymbol}<SlotTicker value={futuresBalance * (currency === 'IDR' ? rates?.IDR : 1)} decimals={currency === 'IDR' ? 0 : 2} className="inline-flex" /></span> : '******'}</span></div></div>
+                    <div className="flex justify-between items-center cursor-pointer">
+                        <div className="flex items-center gap-3">
+                            <CoinIcon symbol="USDT" size={8} />
+                            <div className="flex flex-col">
+                                <span className="font-bold text-[15px] text-slate-900">USDT</span>
+                                <span className="text-[11px] text-slate-400 font-medium whitespace-nowrap">Equity (Wallet + PnL)</span>
+                            </div>
+                        </div>
+                        <div className="flex flex-col items-end">
+                            <span className="font-bold text-[15px] text-slate-900 tabular-nums">
+                                {!hideBalance ? (futuresBalance + futuresUnrealizedPnl).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '******'}
+                            </span>
+                            <span className="text-[12px] text-slate-400 font-medium tabular-nums mt-0.5">
+                                {!hideBalance ? <span>{primarySymbol}<SlotTicker value={(futuresBalance + futuresUnrealizedPnl) * (currency === 'IDR' ? rates?.IDR : 1)} decimals={currency === 'IDR' ? 0 : 2} className="inline-flex" /></span> : '******'}
+                            </span>
+                        </div>
+                    </div>
                 )}
                 {hideZero ? null : ['BTC', 'ETH', 'SOL', 'ADA'].map(sym => (
                     <div key={`fut-zero-${sym}`} className="flex justify-between items-center cursor-pointer"><div className="flex items-center gap-3"><CoinIcon symbol={sym} size={8} /><div className="flex flex-col"><span className="font-bold text-[15px] text-slate-900">{sym}</span></div></div><div className="flex flex-col items-end"><span className="font-bold text-[15px] text-slate-900 tabular-nums">{!hideBalance ? '0.00000000' : '******'}</span><span className="text-[12px] text-slate-400 font-medium tabular-nums mt-0.5">{!hideBalance ? <span>{primarySymbol}<SlotTicker value={0} decimals={currency === 'IDR' ? 0 : 2} className="inline-flex" /></span> : '******'}</span></div></div>

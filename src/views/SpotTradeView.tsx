@@ -13,6 +13,8 @@ import {
     PieChart,
     Compass
 } from 'lucide-react';
+import { MdOutlineArrowDropDown as ArrowDropDown } from 'react-icons/md';
+import { formatPrice } from '../utils/format';
 
 export default function SpotTradeView() {
     const [tradeSide, setTradeSide] = useState<'buy' | 'sell'>('buy');
@@ -37,8 +39,7 @@ export default function SpotTradeView() {
                 const data = await res.json();
                 setTicker(data);
                 if (priceInput === '0') {
-                    const p = parseFloat(data.lastPrice);
-                    setPriceInput((p * 0.9995).toFixed(1));
+                    setPriceInput(data.lastPrice);
                 }
             } catch (err) { }
         };
@@ -81,17 +82,10 @@ export default function SpotTradeView() {
         return () => clearInterval(interval);
     }, []);
 
-    const formatPrice = (price: string) => {
-        if (!price) return '0.00';
-        return parseFloat(price).toLocaleString('en-US', { minimumFractionDigits: 1, maximumFractionDigits: 2 });
-    };
+
 
     const handleTradeSideSwitch = (side: 'buy' | 'sell') => {
         setTradeSide(side);
-        if (ticker?.lastPrice) {
-            const p = parseFloat(ticker.lastPrice);
-            setPriceInput(side === 'buy' ? (p * 0.9995).toFixed(1) : (p * 1.0005).toFixed(1));
-        }
     };
 
     const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -213,7 +207,7 @@ export default function SpotTradeView() {
                     <div className="flex items-center gap-2">
                         <h1 className="text-[22px] font-bold text-gray-900 leading-none">BTC/USDT</h1>
                         <span className="bg-gray-100 text-gray-500 text-[11px] font-bold px-1.5 py-[1px] rounded-[4px] leading-none mt-0.5">10x</span>
-                        <ChevronDown className="w-4 h-4 text-gray-500 mt-0.5" />
+                        <ArrowDropDown className="w-6 h-6 text-gray-500 mt-0.5" />
                     </div>
                     <div className="flex items-center gap-4">
                         <Activity className="w-5 h-5 text-gray-800 cursor-pointer" />
@@ -243,7 +237,7 @@ export default function SpotTradeView() {
                             <span className="font-semibold text-[14px] text-gray-800 flex items-center gap-1.5">
                                 Limit order <Info className="w-3.5 h-3.5 text-gray-400" />
                             </span>
-                            <ChevronDown className="w-4 h-4 text-gray-600" />
+                            <ArrowDropDown className="w-7 h-7 text-gray-600" />
                         </div>
 
                         <div className="bg-[#f5f5f5] rounded-lg px-3 h-[44px] mb-3 flex flex-col justify-center border border-transparent focus-within:border-gray-300 transition-colors">
@@ -446,8 +440,8 @@ export default function SpotTradeView() {
                         })()}
 
                         <div className="flex items-center gap-1.5 px-1">
-                            <div className="flex-1 flex items-center justify-between bg-gray-50 border border-gray-100 px-2 h-[26px] rounded-[6px] text-[13px] font-semibold text-gray-600 shadow-sm cursor-pointer">
-                                0.1 <ChevronDown className="w-3.5 h-3.5 text-gray-400" />
+                            <div className="flex-1 flex items-center justify-between bg-gray-50 border border-gray-100 px-2 h-[30px] rounded-[6px] text-[13px] font-semibold text-gray-600 shadow-sm cursor-pointer">
+                                0.1 <ArrowDropDown className="w-7 h-7 text-gray-400" />
                             </div>
                             <div
                                 className="w-[26px] h-[26px] shrink-0 flex flex-col items-center justify-center gap-[3px] border border-gray-100 rounded-[6px] bg-gray-50 cursor-pointer shadow-sm"
@@ -468,9 +462,9 @@ export default function SpotTradeView() {
                 </div>
 
                 {/* Orders/Positions Tabs */}
-                <div className="border-b border-gray-100 px-4 flex items-center gap-6 overflow-x-auto no-scrollbar sticky top-[52px] z-20 bg-white h-[48px]">
-                    <span className="font-bold text-[15px] text-gray-900 flex items-center gap-1 h-full shrink-0">Orders (0) <ChevronDown className="w-3.5 h-3.5" /></span>
-                    <span className="font-semibold text-[15px] text-gray-500 flex items-center gap-1 h-full shrink-0">Positions (0) & assets <ChevronDown className="w-3.5 h-3.5" /></span>
+                <div className="border-b border-gray-100 px-4 flex items-center gap-3 overflow-x-auto no-scrollbar sticky top-[52px] z-20 bg-white h-[48px]">
+                    <span className="font-bold text-[15px] text-gray-900 flex items-center gap-1 h-full shrink-0">Orders (0) <ArrowDropDown className="w-5 h-5" /></span>
+                    <span className="font-semibold text-[15px] text-gray-500 flex items-center gap-1 h-full shrink-0">Positions (0) & assets <ArrowDropDown className="w-5 h-5" /></span>
                     <span className="font-semibold text-[15px] text-gray-500 flex items-center h-full shrink-0">Bots (0)</span>
                     <div className="ml-auto sticky right-0 bg-white pl-2 flex items-center h-full shrink-0">
                         <FileText className="w-5 h-5 text-gray-800" />
@@ -517,7 +511,7 @@ export default function SpotTradeView() {
                                 <span>5m</span><span>15m</span>
                                 <span className="text-gray-900 font-bold border-b-2 border-gray-900 pb-2 -mb-2">1h</span>
                                 <span>4h</span>
-                                <span>More <ChevronDown className="w-3.5 h-3.5 inline" /></span>
+                                <span>More <ArrowDropDown className="w-7 h-7 inline" /></span>
                             </div>
                             <div className="h-[200px] w-full relative bg-white">
                                 <div className="absolute top-2 left-0 z-10 opacity-[0.03] pointer-events-none w-full h-full flex justify-center items-center">

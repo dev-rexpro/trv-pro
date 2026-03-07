@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { FiChevronLeft as ChevronLeft, FiSearch as Search, FiCopy as Copy, FiMaximize as Maximize } from 'react-icons/fi';
-import { RxTriangleDown as ChevronDown } from 'react-icons/rx';
+import { MdOutlineArrowDropDown as ChevronDown } from 'react-icons/md';
 import useExchangeStore from '../stores/useExchangeStore';
 import CoinIcon from '../components/CoinIcon';
 import SuccessDialog from '../components/SuccessDialog';
@@ -84,11 +84,11 @@ const WithdrawalView = () => {
     };
 
     return (
-        <div className="fixed inset-0 bg-white z-[60] flex flex-col pt-safe px-4 pb-0 overflow-y-auto no-scrollbar">
+        <div className="fixed inset-0 bg-white z-[300] flex flex-col pt-safe px-4 pb-0 overflow-y-auto no-scrollbar">
             {/* Header */}
             <div className="flex items-center justify-between py-4 sticky top-0 bg-white z-10">
                 <button
-                    onClick={() => step > 1 ? setStep(step - 1 as 1 | 2) : setActivePage('assets')}
+                    onClick={() => step > 1 ? setStep(step - 1 as 1 | 2) : window.history.back()}
                     className="p-1 -ml-1 flex items-center justify-center text-slate-900"
                 >
                     <ChevronLeft size={28} />

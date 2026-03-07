@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FiChevronLeft as ChevronLeft, FiCopy as Copy, FiCheck as Check, FiFilter as Filter } from 'react-icons/fi';
 import { LuFileSearch as FileSearch } from 'react-icons/lu';
-import { RxTriangleDown as ChevronDown } from 'react-icons/rx';
+import { MdOutlineArrowDropDown as ChevronDown } from 'react-icons/md';
 import useExchangeStore from '../stores/useExchangeStore';
 import CoinIcon from '../components/CoinIcon';
 import { TransactionRecord } from '../types';
@@ -129,7 +129,7 @@ const HistoryView = () => {
         const symbolPrefix = isPositive ? '+' : '';
 
         return (
-            <motion.div initial={{ x: '100%' }} animate={{ x: 0 }} exit={{ x: '100%' }} transition={{ type: 'spring', damping: 25, stiffness: 200 }} className="fixed inset-0 bg-[#FDFDFD] z-[70] flex flex-col pt-safe px-4">
+            <motion.div initial={{ x: '100%' }} animate={{ x: 0 }} exit={{ x: '100%' }} transition={{ type: 'spring', damping: 25, stiffness: 200 }} className="fixed inset-0 bg-[#FDFDFD] z-[310] flex flex-col pt-safe px-4">
                 <div className="flex items-center justify-between py-4 sticky top-0 bg-[#FDFDFD] z-10">
                     <button onClick={() => setSelectedTx(null)} className="p-1 -ml-1 text-slate-900"><ChevronLeft size={28} /></button>
                     <div className="w-8"></div>
@@ -191,11 +191,11 @@ const HistoryView = () => {
     };
 
     return (
-        <div className="fixed inset-0 bg-[#FDFDFD] z-[60] flex flex-col pt-safe pb-0 overflow-y-auto no-scrollbar">
+        <div className="fixed inset-0 bg-[#FDFDFD] z-[300] flex flex-col pt-safe pb-0 overflow-y-auto no-scrollbar">
             {/* Header */}
             <div className="flex items-center justify-between px-4 py-4 sticky top-0 bg-[#FDFDFD] z-10 border-b border-transparent">
                 <button
-                    onClick={() => setActivePage('assets')}
+                    onClick={() => window.history.back()}
                     className="p-1 -ml-1 flex items-center justify-center text-slate-900"
                 >
                     <ChevronLeft size={28} />
@@ -298,11 +298,11 @@ const HistoryView = () => {
                 {/* Coin Bottom Sheet */}
                 {openSheet === 'coin' && (
                     <>
-                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/40 z-[80]" onClick={() => setOpenSheet('')} />
+                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/40 z-[500]" onClick={() => setOpenSheet('')} />
                         <motion.div
                             initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }}
                             transition={{ type: "spring", damping: 25, stiffness: 200 }}
-                            className="fixed bottom-0 left-0 right-0 bg-white rounded-t-3xl z-[90] flex flex-col pt-3 pb-safe max-h-[70vh] overflow-y-auto"
+                            className="fixed bottom-0 left-0 right-0 bg-white rounded-t-3xl z-[501] flex flex-col pt-3 pb-safe max-h-[70vh] overflow-y-auto"
                         >
                             <div className="w-12 h-1.5 bg-slate-200 rounded-full mx-auto mb-4"></div>
                             <div className="flex justify-center items-center mb-4 px-6 relative">
@@ -324,11 +324,11 @@ const HistoryView = () => {
                 {/* Type Bottom Sheet */}
                 {openSheet === 'type' && (
                     <>
-                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/40 z-[80]" onClick={() => setOpenSheet('')} />
+                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/40 z-[500]" onClick={() => setOpenSheet('')} />
                         <motion.div
                             initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }}
                             transition={{ type: "spring", damping: 25, stiffness: 200 }}
-                            className="fixed bottom-0 left-0 right-0 bg-white rounded-t-3xl z-[90] flex flex-col pt-3 pb-safe max-h-[70vh] overflow-y-auto"
+                            className="fixed bottom-0 left-0 right-0 bg-white rounded-t-3xl z-[501] flex flex-col pt-3 pb-safe max-h-[70vh] overflow-y-auto"
                         >
                             <div className="w-12 h-1.5 bg-slate-200 rounded-full mx-auto mb-4"></div>
                             <div className="flex justify-center items-center mb-4 px-6 relative">
@@ -354,7 +354,7 @@ const HistoryView = () => {
                         <motion.div
                             initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }}
                             transition={{ type: "spring", damping: 25, stiffness: 200 }}
-                            className="fixed bottom-0 left-0 right-0 bg-white rounded-t-3xl z-[90] flex flex-col pt-3 pb-12 px-6 px-safe min-h-[50vh]"
+                            className="fixed bottom-0 left-0 right-0 bg-white rounded-t-3xl z-[501] flex flex-col pt-3 pb-12 px-6 px-safe min-h-[50vh]"
                         >
                             <div className="w-12 h-1.5 bg-slate-200 rounded-full mx-auto mb-4"></div>
                             <div className="flex justify-center items-center mb-6 relative">

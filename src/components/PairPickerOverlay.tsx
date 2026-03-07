@@ -59,8 +59,8 @@ const PairPickerOverlay = () => {
 
     const handleSelect = useCallback((symbol: string) => {
         useExchangeStore.setState({ selectedCoin: symbol });
-        setPairPickerOpen(false);
-    }, [setPairPickerOpen]);
+        window.history.back();
+    }, []);
 
     const toggleSort = (type: 'vol' | 'name') => {
         if (sortBy === type) {
@@ -90,7 +90,7 @@ const PairPickerOverlay = () => {
             animate={{ x: 0 }}
             exit={{ x: '100%' }}
             transition={{ type: 'tween', duration: 0.2, ease: 'easeOut' }}
-            className="fixed inset-0 bg-white z-[100] flex flex-col"
+            className="fixed inset-0 bg-white z-[300] flex flex-col"
         >
             {/* Search */}
             <div className="p-4 pb-2">
@@ -194,7 +194,7 @@ const PairPickerOverlay = () => {
             <div className="p-4 border-t border-slate-100">
                 <button
                     className="w-full py-3 bg-slate-100 rounded-xl text-[14px] font-bold text-slate-700"
-                    onClick={() => setPairPickerOpen(false)}
+                    onClick={() => window.history.back()}
                 >
                     Cancel
                 </button>

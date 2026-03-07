@@ -13,7 +13,7 @@ const SuccessDialog: React.FC<SuccessDialogProps> = ({ isOpen, title, message, o
     return (
         <AnimatePresence>
             {isOpen && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+                <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4">
                     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
                     <motion.div
                         initial={{ scale: 0.95, opacity: 0, y: 20 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.95, opacity: 0, y: 20 }}

@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FiChevronLeft as ChevronLeft, FiSearch as Search, FiCheck as Check, FiCopy as Copy } from 'react-icons/fi';
-import { RxTriangleDown as ChevronDown } from 'react-icons/rx';
+import { MdOutlineArrowDropDown as ChevronDown } from 'react-icons/md';
 import useExchangeStore from '../stores/useExchangeStore';
 import CoinIcon from '../components/CoinIcon';
 import SuccessDialog from '../components/SuccessDialog';
@@ -93,11 +93,11 @@ const CryptoDepositView = () => {
     };
 
     return (
-        <div className="fixed inset-0 bg-white z-[60] flex flex-col pt-safe px-4 pb-0 overflow-y-auto no-scrollbar">
+        <div className="fixed inset-0 bg-white z-[300] flex flex-col pt-safe px-4 pb-0 overflow-y-auto no-scrollbar">
             {/* Header */}
             <div className="flex items-center justify-between py-4 sticky top-0 bg-white z-10">
                 <button
-                    onClick={() => step > 1 ? setStep(step - 1 as 1 | 2) : setActivePage('home')}
+                    onClick={() => step > 1 ? setStep(step - 1 as 1 | 2) : window.history.back()}
                     className="p-1 -ml-1 flex items-center justify-center text-slate-900"
                 >
                     <ChevronLeft size={28} />
@@ -270,11 +270,11 @@ const CryptoDepositView = () => {
             <AnimatePresence>
                 {isAccountSheetOpen && (
                     <>
-                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/40 z-[70]" onClick={() => setIsAccountSheetOpen(false)} />
+                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/40 z-[500]" onClick={() => setIsAccountSheetOpen(false)} />
                         <motion.div
                             initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }}
                             transition={{ type: "spring", damping: 25, stiffness: 200 }}
-                            className="fixed bottom-0 left-0 right-0 bg-white rounded-t-3xl z-[80] overflow-hidden flex flex-col"
+                            className="fixed bottom-0 left-0 right-0 bg-white rounded-t-3xl z-[501] overflow-hidden flex flex-col"
                         >
                             <div className="flex items-center justify-center py-4 border-b border-slate-100 font-bold text-[17px] text-slate-900">
                                 Deposit {networks.find(n => n.id === selectedNetwork)?.name}

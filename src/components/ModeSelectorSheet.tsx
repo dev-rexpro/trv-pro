@@ -48,7 +48,7 @@ const ModeSelectorSheet: React.FC<ModeSelectorSheetProps> = ({ isOpen, onClose, 
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
                         onClick={onClose}
-                        className="fixed inset-0 bg-black/40 z-[100]"
+                        className="fixed inset-0 bg-black/40 z-[1000]"
                     />
 
                     {/* Sheet */}
@@ -57,7 +57,7 @@ const ModeSelectorSheet: React.FC<ModeSelectorSheetProps> = ({ isOpen, onClose, 
                         animate={{ y: 0 }}
                         exit={{ y: '100%' }}
                         transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-                        className="fixed bottom-0 left-0 right-0 bg-white rounded-t-[24px] z-[101] px-6 pt-2 pb-10"
+                        className="fixed bottom-0 left-0 right-0 bg-white rounded-t-[24px] z-[1001] px-6 pt-2 pb-10"
                     >
                         {/* Handle */}
                         <div className="flex justify-center mb-6">
@@ -79,8 +79,8 @@ const ModeSelectorSheet: React.FC<ModeSelectorSheetProps> = ({ isOpen, onClose, 
                                             onClose();
                                         }}
                                         className={`flex items-center gap-4 p-5 rounded-2xl border-2 transition-all text-left ${isSelected
-                                                ? 'border-slate-900 bg-white shadow-sm'
-                                                : 'border-slate-100 bg-white hover:border-slate-200'
+                                            ? 'border-slate-900 bg-white shadow-sm'
+                                            : 'border-slate-100 bg-white hover:border-slate-200'
                                             }`}
                                     >
                                         <div className={`w-12 h-12 rounded-xl bg-slate-50 flex items-center justify-center ${mode.color}`}>

@@ -1,5 +1,5 @@
 // @ts-nocheck
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { AnimatePresence } from 'motion/react';
 import useExchangeStore from './stores/useExchangeStore';
 import { fetchBinanceTicker, fetchBinanceFuturesTicker, fetchExchangeRates, fetchExchangeInfo } from './utils/api';
@@ -24,16 +24,18 @@ import DepositBottomSheet from './components/DepositBottomSheet';
 import PairPickerOverlay from './components/PairPickerOverlay';
 
 // Icons
-import { LuWallet as Wallet } from 'react-icons/lu';
-import { MdOutlineDataThresholding as ChartNoAxesCombined } from 'react-icons/md';
-import { TbContract as FuturesIcon, TbTransfer, TbTransferVertical } from 'react-icons/tb';
+import { RiFundsBoxLine, RiNewspaperLine, RiWalletLine } from 'react-icons/ri';
+import { TbTransfer, TbTransferVertical } from 'react-icons/tb';
 
 // Local Assets
 import homeIcon from './assets/icons/home-icon.svg';
 import systemFont from './assets/fonts/system-font.woff2';
 
 export default function App() {
-  const { activePage, setActivePage, setMarkets, setFuturesMarkets, setRates, setSpotSymbols, setFuturesSymbols, isSearchOpen, isManageGroupsOpen, isDepositOptionOpen, isPairPickerOpen, updateAssetPrices } = useExchangeStore();
+  const { activePage, setActivePage, setMarkets, setFuturesMarkets, setRates, setSpotSymbols, setFuturesSymbols, isSearchOpen, setSearchOpen, isManageGroupsOpen, setManageGroupsOpen, isDepositOptionOpen, setDepositOptionOpen, isPairPickerOpen, setPairPickerOpen, updateAssetPrices, setTradeType } = useExchangeStore();
+
+  const isPopStateRef = useRef(false);
+  const hasInitializedRef = useRef(false);
 
   useEffect(() => {
     const fetchTicker = async () => {
@@ -80,35 +82,35 @@ export default function App() {
     initSymbols();
   }, []);
 
-  // Global Back Button Handler (Android / Browser Back)
+  // Sync Browser History with State
   useEffect(() => {
-    // Push an initial state so we can detect the first 'back' action without exiting the app
-    window.history.pushState(null, '', window.location.href);
+    // Initialize history state on mount
+    const currentState = {
+      activePage: useExchangeStore.getState().activePage,
+      isSearchOpen: useExchangeStore.getState().isSearchOpen,
+      isManageGroupsOpen: useExchangeStore.getState().isManageGroupsOpen,
+      isPairPickerOpen: useExchangeStore.getState().isPairPickerOpen,
+      isDepositOptionOpen: useExchangeStore.getState().isDepositOptionOpen
+    };
+    window.history.replaceState(currentState, '', window.location.href);
+    hasInitializedRef.current = true;
 
     const handlePopState = (e: PopStateEvent) => {
-      const state = useExchangeStore.getState();
+      if (e.state) {
+        isPopStateRef.current = true;
+        const { activePage, isSearchOpen, isManageGroupsOpen, isPairPickerOpen, isDepositOptionOpen } = e.state;
 
-      if (state.isSearchOpen) {
-        state.setSearchOpen(false);
-        window.history.pushState(null, '', window.location.href);
-      } else if (state.isManageGroupsOpen) {
-        state.setManageGroupsOpen(false);
-        window.history.pushState(null, '', window.location.href);
-      } else if (state.isPairPickerOpen) {
-        state.setPairPickerOpen(false);
-        window.history.pushState(null, '', window.location.href);
-      } else if (state.isDepositOptionOpen) {
-        state.setDepositOptionOpen(false);
-        window.history.pushState(null, '', window.location.href);
-      } else if (state.activePage === 'chart-trade') {
-        state.setActivePage('home');
-        window.history.pushState(null, '', window.location.href);
-      } else if (state.activePage !== 'home') {
-        state.setActivePage('home');
-        window.history.pushState(null, '', window.location.href);
-      } else {
-        // We are on home page with no overlays. Allow the default popstate.
-        // Usually, users hit back again here to exit the app.
+        const store = useExchangeStore.getState();
+        store.setActivePage(activePage);
+        store.setSearchOpen(isSearchOpen);
+        store.setManageGroupsOpen(isManageGroupsOpen);
+        store.setPairPickerOpen(isPairPickerOpen);
+        store.setDepositOptionOpen(isDepositOptionOpen);
+
+        // Reset flag in next tick
+        setTimeout(() => {
+          isPopStateRef.current = false;
+        }, 0);
       }
     };
 
@@ -116,8 +118,24 @@ export default function App() {
     return () => window.removeEventListener('popstate', handlePopState);
   }, []);
 
+  // Update history on state change
+  useEffect(() => {
+    if (!hasInitializedRef.current || isPopStateRef.current) return;
+
+    const newState = {
+      activePage,
+      isSearchOpen,
+      isManageGroupsOpen,
+      isPairPickerOpen,
+      isDepositOptionOpen
+    };
+
+    // Deep check to avoid duplicate entries (simplified for subpages)
+    window.history.pushState(newState, '', window.location.href);
+  }, [activePage, isSearchOpen, isManageGroupsOpen, isPairPickerOpen, isDepositOptionOpen]);
+
   return (
-    <div className="flex flex-col h-screen bg-[#FDFDFD] text-slate-900 relative overflow-hidden">
+    <div className="flex flex-col h-screen bg-[#FDFDFD] text-slate-900 relative overflow-hidden font-sans">
       <style>{`
         @font-face {
           font-family: 'System Font';
@@ -153,18 +171,18 @@ export default function App() {
 
       {activePage !== 'chart-trade' && (
         <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-100 flex justify-around items-center pt-2 pb-6 z-[200] px-2">
-          <button onClick={() => setActivePage('home')} className={`flex flex-col items-center gap-1 ${activePage === 'home' ? 'text-slate-900' : 'text-slate-400'}`}>
-            <img src={homeIcon} alt="Home" className={`w-[22px] h-[22px] ${activePage === 'home' ? 'opacity-100' : 'opacity-40'}`} />
+          <button onClick={() => setActivePage('home')} className={`flex flex-col items-center gap-2 ${activePage === 'home' ? 'text-slate-900' : 'text-slate-400'}`}>
+            <img src={homeIcon} alt="Home" className={`w-[24px] h-[24px] ${activePage === 'home' ? 'opacity-100' : 'opacity-40'}`} />
             <span className="text-[10px] font-medium">Home</span>
           </button>
-          <button onClick={() => setActivePage('market')} className={`flex flex-col items-center gap-1 ${activePage === 'market' ? 'text-slate-900' : 'text-slate-400'}`}>
-            <ChartNoAxesCombined size={22} />
+          <button onClick={() => setActivePage('market')} className={`flex flex-col items-center gap-2 ${activePage === 'market' ? 'text-slate-900' : 'text-slate-400'}`}>
+            <RiFundsBoxLine size={24} />
             <span className="text-[10px] font-medium">Markets</span>
           </button>
 
-          <button onClick={() => setActivePage('trade')} className={`flex flex-col items-center gap-1 relative ${activePage === 'trade' ? 'text-slate-900' : 'text-slate-400'}`}>
+          <button onClick={() => { setActivePage('trade'); setTradeType('spot'); }} className={`flex flex-col items-center gap-2 relative ${activePage === 'trade' ? 'text-slate-900' : 'text-slate-400'}`}>
             <div className="w-[24px] h-[24px]"></div>
-            <div className="absolute -top-5 left-1/2 -translate-x-1/2 w-[42px] h-[42px] bg-[#3189c6] rounded-full flex items-center justify-center text-white shadow-sm active:scale-95 transition-transform">
+            <div className="absolute -top-5 left-1/2 -translate-x-1/2 w-[46px] h-[46px] bg-[#3189c6] rounded-full flex items-center justify-center text-white shadow-sm active:scale-95 transition-transform">
               <div className={`transition-all duration-200 flex items-center justify-center ${activePage === 'trade' ? 'scale-110' : 'scale-100'}`}>
                 {activePage === 'trade' ? <TbTransferVertical size={28} strokeWidth={2} /> : <TbTransfer size={28} strokeWidth={2} />}
               </div>
@@ -172,12 +190,12 @@ export default function App() {
             <span className="text-[10px] font-medium">Trade</span>
           </button>
 
-          <button onClick={() => setActivePage('futures')} className={`flex flex-col items-center gap-1 ${activePage === 'futures' ? 'text-slate-900' : 'text-slate-400'}`}>
-            <FuturesIcon size={22} strokeWidth={activePage === 'futures' ? 2.5 : 2} />
+          <button onClick={() => { setActivePage('futures'); setTradeType('futures'); }} className={`flex flex-col items-center gap-2 ${activePage === 'futures' ? 'text-slate-900' : 'text-slate-400'}`}>
+            <RiNewspaperLine size={24} />
             <span className="text-[10px] font-medium">Futures</span>
           </button>
-          <button onClick={() => setActivePage('assets')} className={`flex flex-col items-center gap-1 ${activePage === 'assets' ? 'text-slate-900' : 'text-slate-400'}`}>
-            <Wallet size={22} strokeWidth={activePage === 'assets' ? 2.5 : 2} />
+          <button onClick={() => setActivePage('assets')} className={`flex flex-col items-center gap-2 ${activePage === 'assets' ? 'text-slate-900' : 'text-slate-400'}`}>
+            <RiWalletLine size={24} />
             <span className="text-[10px] font-medium">Assets</span>
           </button>
         </nav>

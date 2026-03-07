@@ -1,7 +1,7 @@
 import React from 'react';
 import CoinIcon from './CoinIcon';
 import useExchangeStore from '../stores/useExchangeStore';
-import { formatCurrency, getCurrencySymbol } from '../utils/format';
+import { formatCurrency, getCurrencySymbol, formatPrice } from '../utils/format';
 
 interface MarketRowProps {
     coin: any;
@@ -24,7 +24,7 @@ const MarketRow = React.memo(({ coin, showPerp = true, onClick }: MarketRowProps
                 <CoinIcon symbol={coin.symbol} size={8} />
                 <div>
                     <div className="flex items-center gap-1.5">
-                        <span className="font-bold text-[15px] text-slate-900 uppercase">{showPerp ? coin.symbol : coin.symbol.replace('USDT', '')}</span>
+                        <span className="font-medium text-[15px] text-slate-900 uppercase">{showPerp ? coin.symbol : coin.symbol.replace('USDT', '')}</span>
                         {showPerp ? (
                             <span className="text-[11px] bg-[#FFF8E6] text-orange-500 px-1.5 py-0.5 rounded font-bold uppercase leading-none">Perp</span>
                         ) : (
@@ -39,10 +39,10 @@ const MarketRow = React.memo(({ coin, showPerp = true, onClick }: MarketRowProps
             </div>
             <div className="flex items-center gap-4">
                 <div className="text-right">
-                    <div className="font-bold text-[15px] text-slate-900">{parseFloat(coin.lastPrice).toLocaleString()}</div>
+                    <div className="font-medium text-[15px] text-slate-900">{formatPrice(coin.lastPrice)}</div>
                     <div className="text-xs text-slate-400 font-medium mt-0.5">{formatCurrency(parseFloat(coin.lastPrice), currency, rates)}</div>
                 </div>
-                <div className={`w-[72px] py-2 rounded-lg text-[13px] font-bold text-center text-white ${isPositive ? 'bg-[#00C076]' : 'bg-[#FF4D5B]'}`}>
+                <div className={`w-[72px] py-2 rounded-md text-[13px] font-bold text-center text-white ${isPositive ? 'bg-[#00C076]' : 'bg-[#FF4D5B]'}`}>
                     {changePercent > 0 ? '+' : ''}{changePercent.toFixed(2)}%
                 </div>
             </div>

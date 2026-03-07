@@ -1,17 +1,22 @@
 // @ts-nocheck
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import {
     FiCheck as Check,
     FiInfo as Info,
     FiChevronRight as ChevronRight,
     FiFileText as FileText,
 } from 'react-icons/fi';
-import { LuCirclePlus, LuChevronUp, LuChevronDown, LuChevronDown as ChevronDown } from 'react-icons/lu';
+import { LuCirclePlus, LuChevronUp, LuChevronDown as PairChevronDown } from 'react-icons/lu';
+import {
+    MdOutlineArrowDropDown as ArrowDropDown,
+    MdOutlineArrowDropUp as ArrowDropUp,
+    MdOutlineCandlestickChart as CandlestickChart
+} from 'react-icons/md';
 import { RiPlayListAddFill as MoreHorizontal } from 'react-icons/ri';
-import { MdOutlineCandlestickChart as CandlestickChart } from 'react-icons/md';
 import { PiDotsSixBold as AlignRight } from 'react-icons/pi';
 import { IoClose as XIcon, IoShareOutline as FiShare2 } from 'react-icons/io5';
 import { FiEdit2, FiUpload as FiUploadLine } from 'react-icons/fi';
+import { formatCurrency, getCurrencySymbol, formatPrice } from '../utils/format';
 import { motion, AnimatePresence } from 'framer-motion';
 import useExchangeStore from '../stores/useExchangeStore';
 import SuccessDialog from '../components/SuccessDialog';
@@ -25,8 +30,11 @@ const TradeView = () => {
         setActivePage, wallets, markets, openOrders, positions,
         spotCostBasis, placeSpotOrder, cancelSpotOrder, placeFuturesOrder,
         closeFuturesPosition, showOrderConfirmation, setShowOrderConfirmation,
-        closeAll
+        closeAll, tradeType, setTradeType, selectedCoin
     } = useExchangeStore();
+
+    const currentSymbol = selectedCoin || 'BTCUSDT';
+    const baseCoin = currentSymbol.replace('USDT', '');
     const [tradeSide, setTradeSide] = useState<'buy' | 'sell'>('buy');
     const [ticker, setTicker] = useState<any>(null);
     const [orderBook, setOrderBook] = useState({ bids: [], asks: [] });
@@ -40,6 +48,7 @@ const TradeView = () => {
     const [isMiniChartOpen, setIsMiniChartOpen] = useState(false);
     const [klines, setKlines] = useState<any[]>([]);
     const [precision, setPrecision] = useState(0.1);
+    const [tickSize, setTickSize] = useState<number | null>(null);
     const [isPrecisionSheetOpen, setIsPrecisionSheetOpen] = useState(false);
     const [activeTab, setActiveTab] = useState<'orders' | 'positions' | 'bots'>('orders');
     const [assetFilter, setAssetFilter] = useState<'All' | 'Positions' | 'Assets'>('All');
@@ -59,14 +68,30 @@ const TradeView = () => {
     const [isMarginModeSheetOpen, setIsMarginModeSheetOpen] = useState(false);
     const [isLeverageSheetOpen, setIsLeverageSheetOpen] = useState(false);
     const [activeInterval, setActiveInterval] = useState('1h');
+    const [isPriceFocused, setIsPriceFocused] = useState(false);
+    const priceInputRef = useRef(priceInput);
+
+    // Keep ref in sync for the interval closure
+    useEffect(() => {
+        priceInputRef.current = priceInput;
+    }, [priceInput]);
 
     // Order Confirmation Modal State
     const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
     const [pendingOrder, setPendingOrder] = useState<any>(null);
 
+    // Sync local activeTopTab with store's tradeType
+    useEffect(() => {
+        if (tradeType === 'futures') {
+            setActiveTopTab('Futures');
+        } else if (tradeType === 'spot') {
+            setActiveTopTab('Spot');
+        }
+    }, [tradeType]);
+
 
     // Get current asset for max calculation
-    const currentAsset = tradeSide === 'buy' ? 'USDT' : 'BTC';
+    const currentAsset = tradeSide === 'buy' ? 'USDT' : baseCoin;
     const availableBalance = wallets?.spot?.[currentAsset] || 0;
 
     const MAX_BTC_SPOT = 0.0554000;
@@ -89,21 +114,23 @@ const TradeView = () => {
     }, []);
 
     useEffect(() => {
+        const baseUrl = activeTopTab === 'Futures' ? 'https://fapi.binance.com' : 'https://api.binance.com';
+        const prefix = activeTopTab === 'Futures' ? '/fapi/v1' : '/api/v3';
+
         const fetchTicker = async () => {
             try {
-                const res = await fetch('https://api.binance.com/api/v3/ticker/24hr?symbol=BTCUSDT');
+                const res = await fetch(`${baseUrl}${prefix}/ticker/24hr?symbol=${currentSymbol}`);
                 const data = await res.json();
                 setTicker(data);
-                if (priceInput === '0') {
-                    const p = parseFloat(data.lastPrice);
-                    setPriceInput((p * 0.9995).toFixed(1));
+                if (!isPriceFocused && (priceInputRef.current === '0' || priceInputRef.current === '')) {
+                    setPriceInput(parseFloat(data.lastPrice).toString());
                 }
             } catch (err) { }
         };
 
         const fetchKlines = async (interval: string) => {
             try {
-                const res = await fetch(`https://api.binance.com/api/v3/klines?symbol=BTCUSDT&interval=${interval}&limit=100`);
+                const res = await fetch(`${baseUrl}${prefix}/klines?symbol=${currentSymbol}&interval=${interval}&limit=100`);
                 const data = await res.json();
                 const formatted = data.map((d: any) => ({
                     time: d[0] / 1000,
@@ -118,7 +145,7 @@ const TradeView = () => {
 
         const fetchOrderBook = async () => {
             try {
-                const res = await fetch('https://api.binance.com/api/v3/depth?symbol=BTCUSDT&limit=20');
+                const res = await fetch(`${baseUrl}${prefix}/depth?symbol=${currentSymbol}&limit=100`);
                 const data = await res.json();
                 setOrderBook({
                     bids: data.bids.map((b: any) => ({ price: parseFloat(b[0]), amount: parseFloat(b[1]) })),
@@ -127,6 +154,21 @@ const TradeView = () => {
             } catch (err) { }
         };
 
+        const fetchExchangeInfo = async () => {
+            try {
+                const res = await fetch(`${baseUrl}${prefix === '/api/v3' ? '/api/v3' : '/fapi/v1'}/exchangeInfo?symbol=${currentSymbol}`);
+                const data = await res.json();
+                const symbolInfo = data.symbols?.[0];
+                if (symbolInfo) {
+                    const priceFilter = symbolInfo.filters.find((f: any) => f.filterType === 'PRICE_FILTER');
+                    if (priceFilter && priceFilter.tickSize) {
+                        setTickSize(parseFloat(priceFilter.tickSize));
+                    }
+                }
+            } catch (err) { }
+        };
+
+        fetchExchangeInfo();
         fetchTicker();
         fetchKlines(activeInterval);
         fetchOrderBook();
@@ -137,7 +179,7 @@ const TradeView = () => {
         }, 2000);
 
         return () => clearInterval(interval);
-    }, [activeInterval]);
+    }, [activeInterval, activeTopTab, currentSymbol]);
 
     useEffect(() => {
         if (ticker && klines.length > 0) {
@@ -154,19 +196,18 @@ const TradeView = () => {
         }
     }, [ticker]);
 
-    const formatPrice = (price: string) => {
-        if (!price) return '0.00';
-        return parseFloat(price).toLocaleString('en-US', { minimumFractionDigits: 1, maximumFractionDigits: 2 });
-    };
+
+
+    useEffect(() => {
+        setPriceInput('0');
+        setAmountInput('');
+        setSliderPercent(0);
+    }, [currentSymbol, activeTopTab]);
 
     const handleTradeSideSwitch = (side: 'buy' | 'sell') => {
         setTradeSide(side);
         setAmountInput('');
         setSliderPercent(0);
-        if (ticker?.lastPrice) {
-            const p = parseFloat(ticker.lastPrice);
-            setPriceInput(side === 'buy' ? (p * 0.9995).toFixed(1) : (p * 1.0005).toFixed(1));
-        }
     };
 
     const handleFinalConfirm = (dontShowAgain: boolean) => {
@@ -178,7 +219,7 @@ const TradeView = () => {
 
         if (activeTopTab === 'Futures') {
             placeFuturesOrder({
-                symbol: 'BTCUSDT',
+                symbol: currentSymbol,
                 side: tradeSide === 'buy' ? 'Buy' : 'Sell',
                 type: orderType === 'TP/SL' ? 'Limit' : orderType,
                 price: p,
@@ -190,11 +231,11 @@ const TradeView = () => {
             setSuccessDialog({
                 isOpen: true,
                 title: 'Order Placed',
-                message: `Successfully placed ${tradeSide.toUpperCase()} ${a.toFixed(4)} BTC\nat ${p.toLocaleString('en-US')} USDT`
+                message: `Successfully placed ${tradeSide.toUpperCase()} ${a.toFixed(4)} ${baseCoin}\nat ${p.toLocaleString('en-US')} USDT`
             });
         } else {
             placeSpotOrder({
-                symbol: 'BTCUSDT',
+                symbol: currentSymbol,
                 side: tradeSide === 'buy' ? 'Buy' : 'Sell',
                 type: orderType === 'TP/SL' ? 'Limit' : orderType,
                 price: p,
@@ -228,7 +269,7 @@ const TradeView = () => {
             // Direct execution if preference is set
             if (activeTopTab === 'Futures') {
                 placeFuturesOrder({
-                    symbol: 'BTCUSDT',
+                    symbol: currentSymbol,
                     side: tradeSide === 'buy' ? 'Buy' : 'Sell',
                     type: orderType === 'TP/SL' ? 'Limit' : orderType,
                     price: p,
@@ -240,11 +281,11 @@ const TradeView = () => {
                 setSuccessDialog({
                     isOpen: true,
                     title: 'Order Placed',
-                    message: `Successfully placed ${tradeSide.toUpperCase()} ${a.toFixed(4)} BTC\nat ${p.toLocaleString('en-US')} USDT`
+                    message: `Successfully placed ${tradeSide.toUpperCase()} ${a.toFixed(4)} ${baseCoin}\nat ${p.toLocaleString('en-US')} USDT`
                 });
             } else {
                 placeSpotOrder({
-                    symbol: 'BTCUSDT',
+                    symbol: currentSymbol,
                     side: tradeSide === 'buy' ? 'Buy' : 'Sell',
                     type: orderType === 'TP/SL' ? 'Limit' : orderType,
                     price: p,
@@ -317,6 +358,38 @@ const TradeView = () => {
         });
     };
 
+    const dynamicPrecisions = useMemo(() => {
+        if (tickSize && tickSize > 0) {
+            // Generate precisions based on real tickSize 
+            // e.g. tickSize 0.00001 -> [0.00001, 0.0001, 0.001, 0.01]
+            return [
+                tickSize,
+                tickSize * 10,
+                tickSize * 100,
+                tickSize * 1000
+            ].map(v => parseFloat(v.toPrecision(10))); // avoid floating point math errors
+        }
+
+        // Fallback
+        const p = currentPrice || 0;
+        if (p < 0.00001) return [0.00000001, 0.0000001, 0.000001, 0.00001];
+        if (p < 0.001) return [0.000001, 0.00001, 0.0001, 0.001];
+        if (p < 0.1) return [0.0001, 0.001, 0.01, 0.1];
+        if (p < 10) return [0.001, 0.01, 0.1, 1];
+        if (p < 500) return [0.01, 0.1, 1, 10];
+        if (p < 5000) return [0.1, 1, 10, 100];
+        return [0.1, 1, 10, 100];
+    }, [currentPrice, tickSize]);
+
+    // Auto-adjust precision when symbol changes
+    useEffect(() => {
+        if (!dynamicPrecisions.includes(precision) || (tickSize && precision < tickSize)) {
+            setPrecision(dynamicPrecisions[0]);
+        }
+    }, [dynamicPrecisions, precision, tickSize]);
+
+    const precisionDecimals = precision < 1 ? Math.abs(Math.round(Math.log10(precision))) : 0;
+
     const aggregateOrderBook = (data: any[], type: 'buy' | 'sell') => {
         if (!data || data.length === 0) return [];
         const grouped: { [key: string]: number } = {};
@@ -325,7 +398,7 @@ const TradeView = () => {
             const groupedPrice = type === 'buy'
                 ? Math.floor(p / precision) * precision
                 : Math.ceil(p / precision) * precision;
-            const priceKey = groupedPrice.toFixed(precision >= 1 ? 0 : 1);
+            const priceKey = groupedPrice.toFixed(precisionDecimals);
             grouped[priceKey] = (grouped[priceKey] || 0) + (typeof item.amount === 'string' ? parseFloat(item.amount) : item.amount);
         });
         return Object.entries(grouped)
@@ -390,8 +463,10 @@ const TradeView = () => {
         );
     };
 
-    const halfListCount = isTpSlEnabled ? 8 : 6;
-    const fullListCount = isTpSlEnabled ? 16 : 12;
+    const halfListCount = activeTopTab === 'Futures'
+        ? (isTpSlEnabled ? 10 : 8)
+        : (isTpSlEnabled ? 8 : 6);
+    const fullListCount = halfListCount * 2;
     const askLimit = orderBookView === 'sell' ? fullListCount : halfListCount;
     const bidLimit = orderBookView === 'buy' ? fullListCount : halfListCount;
 
@@ -425,34 +500,39 @@ const TradeView = () => {
         `}
             </style>
 
-            {/* Top Header Tabs */}
-            <div className="px-4 pt-4 pb-2 bg-white pb-1 shrink-0">
-                <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-5 text-[15px]">
+            <div className="bg-white shrink-0">
+                <div className="px-4 pt-4 pb-2 flex justify-between items-center">
+                    <div className="flex gap-5 text-[18px] font-medium text-slate-400 overflow-x-auto no-scrollbar">
                         {['Spot', 'Futures', 'Bots', 'Convert'].map((t) => (
                             <span
                                 key={t}
-                                onClick={() => { setActiveTopTab(t as any); setSliderPercent(0); setAmountInput(''); }}
-                                className={`pb-1 cursor-pointer transition-all ${activeTopTab === t ? 'font-bold text-gray-900 border-b-2 border-gray-900' : 'font-semibold text-gray-400'}`}
+                                onClick={() => {
+                                    setActiveTopTab(t as any);
+                                    if (t === 'Spot') setTradeType('spot');
+                                    if (t === 'Futures') setTradeType('futures');
+                                    setSliderPercent(0);
+                                    setAmountInput('');
+                                }}
+                                className={`cursor-pointer whitespace-nowrap transition-all ${activeTopTab === t ? 'text-slate-900' : ''}`}
                             >
                                 {t}
                             </span>
                         ))}
                     </div>
-                    <MoreHorizontal className="w-5 h-5 text-gray-800" />
+                    <MoreHorizontal size={20} className="text-slate-900" />
                 </div>
             </div>
 
             {/* Symbol Header */}
             <div className="px-4 flex items-center justify-between border-b border-gray-100 bg-white sticky top-0 z-[100] h-[52px]" style={{ transform: 'translateZ(0)' }}>
                 <div className="flex items-center gap-2">
-                    <h1 className="text-[22px] font-bold text-gray-900 leading-none">{activeTopTab === 'Futures' ? 'BTCUSDT' : 'BTC/USDT'}</h1>
+                    <h1 className="text-[22px] font-bold text-gray-900 leading-none">{activeTopTab === 'Futures' ? currentSymbol : currentSymbol.replace('USDT', '/USDT')}</h1>
                     {activeTopTab === 'Futures' ? (
                         <span className="bg-[#fff7e6] text-[#faad14] border border-[#ffe58f] text-[11px] font-bold px-1.5 py-[1px] rounded-[4px] leading-none mt-0.5">Perp</span>
                     ) : (
                         <span className="bg-gray-100 text-gray-500 text-[11px] font-bold px-1.5 py-[1px] rounded-[4px] leading-none mt-0.5">10x</span>
                     )}
-                    <ChevronDown className="w-4 h-4 text-gray-500 mt-0.5" />
+                    <ArrowDropDown className="w-6 h-6 text-gray-500 mt-0.5" />
                 </div>
                 <div className="flex items-center gap-4">
                     <CandlestickChart className="w-6 h-6 text-gray-800 cursor-pointer" onClick={() => setActivePage('chart-trade')} />
@@ -471,14 +551,14 @@ const TradeView = () => {
                                     onClick={() => setIsMarginModeSheetOpen(true)}
                                 >
                                     <span className="text-[13px] font-bold text-gray-800">{marginMode}</span>
-                                    <ChevronDown className="w-3.5 h-3.5 text-gray-500" />
+                                    <ArrowDropDown className="w-7 h-7 text-gray-500" />
                                 </div>
                                 <div
                                     className="flex-1 bg-[#f5f5f5] h-[32px] rounded-md flex items-center justify-between px-2 cursor-pointer"
                                     onClick={() => setIsLeverageSheetOpen(true)}
                                 >
                                     <span className="text-[13px] font-bold text-gray-800">{leverage}x</span>
-                                    <ChevronDown className="w-3.5 h-3.5 text-gray-500" />
+                                    <ArrowDropDown className="w-7 h-7 text-gray-500" />
                                 </div>
                             </div>
                             <div
@@ -488,7 +568,7 @@ const TradeView = () => {
                                 <span className="font-semibold text-[14px] text-gray-800 flex items-center gap-1.5">
                                     {orderType === 'Market' ? 'Market order' : orderType === 'Limit' ? 'Limit order' : 'TP/SL'} <Info className="w-3.5 h-3.5 text-gray-400" />
                                 </span>
-                                <ChevronDown className="w-4 h-4 text-gray-600" />
+                                <ArrowDropDown className="w-7 h-7 text-gray-600" />
                             </div>
 
                             <div className="bg-[#f5f5f5] rounded-lg px-3 h-[44px] flex flex-col justify-center border border-transparent focus-within:border-gray-300 transition-colors">
@@ -501,6 +581,8 @@ const TradeView = () => {
                                         className="bg-transparent font-semibold text-gray-900 text-[15px] outline-none w-full p-0 leading-none"
                                         value={priceInput}
                                         onChange={(e) => setPriceInput(e.target.value)}
+                                        onFocus={() => setIsPriceFocused(true)}
+                                        onBlur={() => setIsPriceFocused(false)}
                                     />
                                 )}
                             </div>
@@ -526,7 +608,7 @@ const TradeView = () => {
                                 <span className="font-semibold text-[14px] text-gray-800 flex items-center gap-1.5">
                                     {orderType === 'Market' ? 'Market order' : orderType === 'Limit' ? 'Limit order' : 'TP/SL'} <Info className="w-3.5 h-3.5 text-gray-400" />
                                 </span>
-                                <ChevronDown className="w-4 h-4 text-gray-600" />
+                                <ArrowDropDown className="w-7 h-7 text-gray-600" />
                             </div>
 
                             <div className="bg-[#f5f5f5] rounded-lg px-3 h-[44px] mb-1.5 flex flex-col justify-center border border-transparent focus-within:border-gray-300 transition-colors">
@@ -539,6 +621,8 @@ const TradeView = () => {
                                         className="bg-transparent font-semibold text-gray-900 text-[15px] outline-none w-full p-0 leading-none"
                                         value={priceInput}
                                         onChange={(e) => setPriceInput(e.target.value)}
+                                        onFocus={() => setIsPriceFocused(true)}
+                                        onBlur={() => setIsPriceFocused(false)}
                                     />
                                 )}
                             </div>
@@ -548,7 +632,7 @@ const TradeView = () => {
                     <div className="bg-[#f5f5f5] rounded-lg px-3 h-[44px] mb-1.5 flex flex-col justify-center border border-transparent focus-within:border-gray-300 transition-colors relative cursor-text">
                         {amountInput ? (
                             <div className="flex flex-col w-full z-10">
-                                <span className="text-[11px] text-gray-500 font-medium leading-none mb-1">Amount (BTC)</span>
+                                <span className="text-[11px] text-gray-500 font-medium leading-none mb-1">Amount ({baseCoin})</span>
                                 <input
                                     type="text"
                                     className="bg-transparent font-semibold text-gray-900 text-[15px] outline-none w-full p-0 leading-none"
@@ -559,7 +643,7 @@ const TradeView = () => {
                         ) : (
                             <div className="flex justify-between items-center w-full relative">
                                 <span className="text-[14px] text-gray-500 font-medium">Amount</span>
-                                <span className="text-[14px] text-gray-500 font-medium">BTC</span>
+                                <span className="text-[14px] text-gray-500 font-medium">{baseCoin}</span>
                                 <input
                                     type="text"
                                     className="absolute inset-0 w-full h-full opacity-0 cursor-text z-20"
@@ -622,7 +706,7 @@ const TradeView = () => {
                             </div>
                             <div className="flex justify-between items-center text-[12px] mb-2 px-1">
                                 <span className="text-gray-400 font-medium">Max {tradeSide}</span>
-                                <span className="font-medium text-gray-700">{maxBuySellValue} BTC</span>
+                                <span className="font-medium text-gray-700">{maxBuySellValue} {baseCoin}</span>
                             </div>
                         </>
                     )}
@@ -674,22 +758,22 @@ const TradeView = () => {
                         {activeTopTab === 'Futures' ? (
                             <>
                                 <div className="flex flex-col gap-1 text-[11px] px-1 mb-1.5">
-                                    <div className="flex justify-between text-gray-400"><span>Max buy</span><span className="text-gray-800 font-bold">{maxBuySellFutures.toFixed(4)} BTC</span></div>
+                                    <div className="flex justify-between text-gray-400"><span>Max buy</span><span className="text-gray-800 font-bold">{maxBuySellFutures.toFixed(4)} {baseCoin}</span></div>
                                     <div className="flex justify-between text-gray-400"><span>Cost</span><span className="text-gray-800 font-bold">{currentFuturesCost.toFixed(2)} USDT</span></div>
                                     <div className="flex justify-between text-gray-400"><span>Liq. price</span><span className="text-gray-800 font-bold">{sliderPercent > 0 ? liqPriceLong.toFixed(1) : '--'}</span></div>
                                 </div>
                                 <button className="w-full h-[44px] rounded-full font-bold text-white bg-[#20b26c] flex flex-col items-center justify-center shrink-0 overflow-hidden shadow-sm mb-2" onClick={handlePlaceOrder}>
                                     <span className="text-[14px] leading-tight">Buy (Long) {leverage}x</span>
-                                    {sliderPercent > 0 && <span className="text-[10px] opacity-90 font-medium leading-tight">≈{currentFuturesAmount.toFixed(4)} BTC</span>}
+                                    {sliderPercent > 0 && <span className="text-[10px] opacity-90 font-medium leading-tight">≈{currentFuturesAmount.toFixed(4)} {baseCoin}</span>}
                                 </button>
                                 <div className="flex flex-col gap-1 text-[11px] px-1 mt-1 mb-1.5">
-                                    <div className="flex justify-between text-gray-400"><span>Max sell</span><span className="text-gray-800 font-bold">{maxBuySellFutures.toFixed(4)} BTC</span></div>
+                                    <div className="flex justify-between text-gray-400"><span>Max sell</span><span className="text-gray-800 font-bold">{maxBuySellFutures.toFixed(4)} {baseCoin}</span></div>
                                     <div className="flex justify-between text-gray-400"><span>Cost</span><span className="text-gray-800 font-bold">{currentFuturesCost.toFixed(2)} USDT</span></div>
                                     <div className="flex justify-between text-gray-400"><span>Liq. price</span><span className="text-gray-800 font-bold">{sliderPercent > 0 ? liqPriceShort.toFixed(1) : '--'}</span></div>
                                 </div>
                                 <button className="w-full h-[44px] rounded-full font-bold text-white bg-[#ef454a] flex flex-col items-center justify-center shrink-0 overflow-hidden shadow-sm" onClick={handlePlaceOrder}>
                                     <span className="text-[14px] leading-tight">Sell (Short) {leverage}x</span>
-                                    {sliderPercent > 0 && <span className="text-[10px] opacity-90 font-medium leading-tight">≈{currentFuturesAmount.toFixed(4)} BTC</span>}
+                                    {sliderPercent > 0 && <span className="text-[10px] opacity-90 font-medium leading-tight">≈{currentFuturesAmount.toFixed(4)} {baseCoin}</span>}
                                 </button>
                             </>
                         ) : (
@@ -697,7 +781,7 @@ const TradeView = () => {
                                 className={`w-full h-[44px] rounded-full font-bold text-white text-[15px] mt-auto shadow-sm ${tradeSide === 'buy' ? 'bg-[#20b26c]' : 'bg-[#ef454a]'}`}
                                 onClick={handlePlaceOrder}
                             >
-                                {tradeSide === 'buy' ? 'Buy BTC' : 'Sell BTC'}
+                                {tradeSide === 'buy' ? `Buy ${baseCoin}` : `Sell ${baseCoin}`}
                             </button>
                         )}
                     </div>
@@ -726,22 +810,33 @@ const TradeView = () => {
 
                     <div className="flex justify-between text-gray-400 mb-1.5 text-[11px] font-medium px-1">
                         <span>Price<br />(USDT)</span>
-                        <span className="text-right">Amount<br />(BTC)</span>
+                        <span className="text-right">Amount<br />({baseCoin})</span>
                     </div>
 
-                    {(orderBookView === 'both' || orderBookView === 'sell') && (
-                        <div className="flex flex-col flex-1 justify-end relative gap-[1px]">
-                            {currentAsks.reverse().map((ask: any, i: number) => (
-                                <div key={`ask-${i}`} className="flex justify-between relative h-[22px] items-center px-1">
-                                    <div className="absolute right-0 top-0 h-full bg-[#ffecec] transition-all duration-500 ease-in-out" style={{ width: `${(ask.amount / maxAskAmount) * 100}%` }} />
-                                    <span className="text-[#ef454a] font-medium relative z-10 text-[12px] tracking-tight">
-                                        {ask.price.toLocaleString('en-US', { minimumFractionDigits: precision >= 1 ? 0 : 1, maximumFractionDigits: precision >= 1 ? 0 : 1 })}
-                                    </span>
-                                    <span className="text-gray-700 relative z-10 text-[12px] font-medium tracking-tight">{ask.amount.toFixed(5)}</span>
-                                </div>
-                            ))}
-                        </div>
-                    )}
+                    {(() => {
+                        let totalAsks = 0;
+                        const asksWithDepth = [...currentAsks].reverse().map(ask => {
+                            totalAsks += ask.amount;
+                            return { ...ask, depth: totalAsks };
+                        }).reverse();
+                        const maxDAsks = totalAsks > 0 ? totalAsks : 1;
+
+                        return (orderBookView === 'both' || orderBookView === 'sell') && (
+                            <div className="flex flex-col flex-1 justify-end relative gap-[1px]">
+                                {asksWithDepth.map((ask: any, i: number) => (
+                                    <div key={`ask-${i}`} className="flex justify-between relative h-[22px] items-center px-1 cursor-pointer hover:bg-slate-50" onClick={() => setPriceInput(ask.price.toString())}>
+                                        <div className="absolute right-0 top-0 h-full bg-[#ffecec] transition-all duration-300" style={{ width: `${(ask.depth / maxDAsks) * 100}%` }} />
+                                        <span className="text-[#ef454a] font-medium relative z-10 text-[12px] tracking-tight">
+                                            {ask.price.toLocaleString('en-US', { minimumFractionDigits: precisionDecimals, maximumFractionDigits: precisionDecimals })}
+                                        </span>
+                                        <span className="text-gray-700 relative z-10 text-[12px] font-medium tracking-tight">
+                                            {ask.amount >= 1 ? ask.amount.toFixed(2) : ask.amount.toFixed(5)}
+                                        </span>
+                                    </div>
+                                ))}
+                            </div>
+                        );
+                    })()}
 
                     <div className="py-2 my-0.5 relative group">
                         <div className="flex items-center justify-between px-1">
@@ -758,19 +853,30 @@ const TradeView = () => {
                         </div>
                     </div>
 
-                    {(orderBookView === 'both' || orderBookView === 'buy') && (
-                        <div className="flex flex-col flex-1 relative gap-[1px]">
-                            {currentBids.map((bid: any, i: number) => (
-                                <div key={`bid-${i}`} className="flex justify-between relative h-[22px] items-center px-1">
-                                    <div className="absolute right-0 top-0 h-full bg-[#e5f7ed] transition-all duration-500 ease-in-out" style={{ width: `${(bid.amount / maxBidAmount) * 100}%` }} />
-                                    <span className="text-[#20b26c] font-medium relative z-10 text-[12px] tracking-tight">
-                                        {bid.price.toLocaleString('en-US', { minimumFractionDigits: precision >= 1 ? 0 : 1, maximumFractionDigits: precision >= 1 ? 0 : 1 })}
-                                    </span>
-                                    <span className="text-gray-700 relative z-10 text-[12px] font-medium tracking-tight">{bid.amount.toFixed(5)}</span>
-                                </div>
-                            ))}
-                        </div>
-                    )}
+                    {(() => {
+                        let totalBids = 0;
+                        const bidsWithDepth = currentBids.map(bid => {
+                            totalBids += bid.amount;
+                            return { ...bid, depth: totalBids };
+                        });
+                        const maxDBids = totalBids > 0 ? totalBids : 1;
+
+                        return (orderBookView === 'both' || orderBookView === 'buy') && (
+                            <div className="flex flex-col flex-1 relative gap-[1px]">
+                                {bidsWithDepth.map((bid: any, i: number) => (
+                                    <div key={`bid-${i}`} className="flex justify-between relative h-[22px] items-center px-1 cursor-pointer hover:bg-slate-50" onClick={() => setPriceInput(bid.price.toString())}>
+                                        <div className="absolute right-0 top-0 h-full bg-[#e5f7ed] transition-all duration-300" style={{ width: `${(bid.depth / maxDBids) * 100}%` }} />
+                                        <span className="text-[#20b26c] font-medium relative z-10 text-[12px] tracking-tight">
+                                            {bid.price.toLocaleString('en-US', { minimumFractionDigits: precisionDecimals, maximumFractionDigits: precisionDecimals })}
+                                        </span>
+                                        <span className="text-gray-700 relative z-10 text-[12px] font-medium tracking-tight">
+                                            {bid.amount >= 1 ? bid.amount.toFixed(2) : bid.amount.toFixed(5)}
+                                        </span>
+                                    </div>
+                                ))}
+                            </div>
+                        );
+                    })()}
 
                     {(() => {
                         let buyRatio = 50;
@@ -827,10 +933,10 @@ const TradeView = () => {
 
                     <div className="flex items-center gap-1.5 px-1">
                         <div
-                            className="flex-1 flex items-center justify-between bg-gray-50 border border-gray-100 px-2 h-[26px] rounded-[6px] text-[13px] font-semibold text-gray-600 shadow-sm cursor-pointer"
+                            className="flex-1 flex items-center justify-between bg-gray-50 border border-gray-100 px-2 h-[30px] rounded-[6px] text-[13px] font-semibold text-gray-600 shadow-sm cursor-pointer"
                             onClick={() => setIsPrecisionSheetOpen(true)}
                         >
-                            {precision} <ChevronDown className="w-3.5 h-3.5 text-gray-400" />
+                            {precision} <ArrowDropDown className="w-7 h-7 text-gray-400" />
                         </div>
                         <div
                             className="w-[26px] h-[26px] shrink-0 flex flex-col items-center justify-center gap-[4px] border border-gray-100 rounded-[6px] bg-gray-50 cursor-pointer shadow-sm"
@@ -852,34 +958,40 @@ const TradeView = () => {
 
             {/* Orders/Positions Tabs */}
             <div className="border-b border-gray-100 px-4 flex items-center justify-between sticky top-[52px] z-[90] bg-white h-[48px]" style={{ transform: 'translateZ(0)' }}>
-                <div className="flex items-center gap-6 overflow-x-auto no-scrollbar h-full pr-10">
+                <div className="flex items-center gap-3 overflow-x-auto no-scrollbar h-full pr-10">
                     <div
-                        className={`flex items-center gap-1 h-full shrink-0 cursor-pointer transition-colors ${activeTab === 'orders' ? 'text-gray-900 font-bold' : 'text-gray-500 font-semibold'}`}
-                        onClick={() => setActiveTab('orders')}
+                        className={`flex items-center gap-1.5 h-full shrink-0 cursor-pointer transition-colors ${activeTab === 'orders' ? 'text-gray-900 font-bold' : 'text-gray-500 font-semibold'}`}
+                        onClick={() => {
+                            setActiveTab('orders');
+                            setSliderPercent(0);
+                            setAmountInput('');
+                        }}
                     >
                         <span className="text-[14px]">Orders ({
-                            openOrders.filter(o => !isCurrentSymbolChecked || o.symbol === 'BTCUSDT').length
+                            openOrders.filter(o => !isCurrentSymbolChecked || o.symbol === currentSymbol).length
                         })</span>
-                        <ChevronDown className="w-3 h-3 pt-0.5" />
+                        <ArrowDropDown className="w-5 h-5 mt-0.5" />
                     </div>
                     <div
-                        className={`flex items-center gap-1 h-full shrink-0 cursor-pointer transition-colors ${activeTab === 'positions' ? 'text-gray-900 font-bold' : 'text-gray-500 font-semibold'}`}
+                        className={`flex items-center gap-1.5 h-full shrink-0 cursor-pointer transition-colors ${activeTab === 'positions' ? 'text-gray-900 font-bold' : 'text-gray-500 font-semibold'}`}
                         onClick={() => {
                             if (activeTab === 'positions') {
                                 setIsAssetFilterSheetOpen(true);
                             } else {
                                 setActiveTab('positions');
+                                setSliderPercent(0);
+                                setAmountInput('');
                             }
                         }}
                     >
                         <span className="text-[14px]">
                             {assetFilter === 'All' ? 'Positions & assets' : (assetFilter === 'Positions' ? 'Positions' : 'Assets')} ({
-                                (assetFilter === 'Assets' ? 0 : positions.filter(p => !isCurrentSymbolChecked || p.symbol === 'BTCUSDT').length) +
+                                (assetFilter === 'Assets' ? 0 : positions.filter(p => !isCurrentSymbolChecked || p.symbol === currentSymbol).length) +
                                 Object.entries(wallets?.spot || {})
                                     .filter(([symbol, amount]) => {
                                         if (symbol === 'USDT' && assetFilter === 'Positions') return false;
                                         if (amount <= 0) return false;
-                                        if (isCurrentSymbolChecked && symbol !== 'BTC') return false;
+                                        if (isCurrentSymbolChecked && symbol !== baseCoin) return false;
 
                                         const hasCost = spotCostBasis?.[symbol] && spotCostBasis[symbol] > 0;
                                         if (assetFilter === 'Positions' && !hasCost) return false;
@@ -889,13 +1001,18 @@ const TradeView = () => {
                                     }).length
                             })
                         </span>
-                        <ChevronDown className="w-3 h-3 pt-0.5" />
+                        <ArrowDropDown className="w-5 h-5 mt-0.5" />
                     </div>
                     <div
-                        className={`flex items-center gap-1 h-full shrink-0 cursor-pointer transition-colors ${activeTab === 'bots' ? 'text-gray-900 font-bold' : 'text-gray-500 font-semibold'}`}
-                        onClick={() => setActiveTab('bots')}
+                        className={`flex items-center gap-1.5 h-full shrink-0 cursor-pointer transition-colors ${activeTab === 'bots' ? 'text-gray-900 font-bold' : 'text-gray-500 font-semibold'}`}
+                        onClick={() => {
+                            setActiveTab('bots');
+                            setSliderPercent(0);
+                            setAmountInput('');
+                        }}
                     >
                         <span className="text-[14px]">Bots (0)</span>
+                        <ArrowDropDown className="w-5 h-5 mt-0.5" />
                     </div>
                 </div>
                 <div className="flex items-center h-full pl-2 bg-white relative cursor-pointer" onClick={() => setActivePage('history')}>
@@ -929,7 +1046,7 @@ const TradeView = () => {
 
                         {/* Order Cards from Store */}
                         {openOrders
-                            .filter(order => !isCurrentSymbolChecked || order.symbol === 'BTCUSDT')
+                            .filter(order => !isCurrentSymbolChecked || order.symbol === currentSymbol)
                             .map((order) => (
                                 <div key={order.id} className="p-4 border-b border-gray-100">
                                     <div className="flex items-center justify-between mb-3">
@@ -951,11 +1068,11 @@ const TradeView = () => {
                                     </div>
                                     <div className="grid grid-cols-3 gap-1">
                                         <div>
-                                            <p className="text-[12px] text-gray-400 font-medium mb-1 border-b border-dashed border-gray-200 w-max">Order amount (BTC)</p>
+                                            <p className="text-[12px] text-gray-400 font-medium mb-1 border-b border-dashed border-gray-200 w-max">Order amount ({baseCoin})</p>
                                             <p className="text-[15px] font-bold text-gray-900">{order.amount}</p>
                                         </div>
                                         <div className="text-center">
-                                            <p className="text-[12px] text-gray-400 font-medium mb-1 border-b border-dashed border-gray-200 mx-auto w-max">Filled (BTC)</p>
+                                            <p className="text-[12px] text-gray-400 font-medium mb-1 border-b border-dashed border-gray-200 mx-auto w-max">Filled ({baseCoin})</p>
                                             <p className="text-[15px] font-bold text-gray-900">{order.filled}</p>
                                         </div>
                                         <div className="text-right">
@@ -988,7 +1105,7 @@ const TradeView = () => {
                         <div className="p-4">
                             {/* Position Cards from Store */}
                             {assetFilter !== 'Assets' && positions
-                                .filter(pos => !isCurrentSymbolChecked || pos.symbol === 'BTCUSDT')
+                                .filter(pos => !isCurrentSymbolChecked || pos.symbol === currentSymbol)
                                 .map((pos) => (
                                     <div key={pos.id} className="mb-6">
                                         <div className="flex items-center justify-between mb-3">
@@ -1016,7 +1133,7 @@ const TradeView = () => {
                                         </div>
                                         <div className="grid grid-cols-3 gap-y-4 mb-6">
                                             <div>
-                                                <p className="text-[12px] text-gray-400 font-medium mb-1 border-b border-dashed border-gray-200 w-max">Size (BTC)</p>
+                                                <p className="text-[12px] text-gray-400 font-medium mb-1 border-b border-dashed border-gray-200 w-max">Size ({baseCoin})</p>
                                                 <p className="text-[15px] font-bold text-gray-900">{pos.size}</p>
                                             </div>
                                             <div className="text-center">
@@ -1056,7 +1173,7 @@ const TradeView = () => {
                             {Object.entries(wallets?.spot || {})
                                 .filter(([symbol, balance]: [string, any]) => {
                                     if (balance <= 0) return false;
-                                    if (isCurrentSymbolChecked && symbol !== 'BTC' && symbol !== 'USDT') return false;
+                                    if (isCurrentSymbolChecked && symbol !== baseCoin && symbol !== 'USDT') return false;
 
                                     const hasCost = spotCostBasis?.[symbol] && spotCostBasis[symbol] > 0;
                                     if (assetFilter === 'Positions' && !hasCost) return false;
@@ -1109,7 +1226,7 @@ const TradeView = () => {
 
                                     const marketSymbol = `${symbol}USDT`;
                                     const market = markets.find(m => m.symbol === marketSymbol);
-                                    const lastPrice = market ? parseFloat(market.lastPrice) : (symbol === 'BTC' ? (ticker?.lastPrice || 68940.6) : 1);
+                                    const lastPrice = market ? parseFloat(market.lastPrice) : (symbol === baseCoin ? (ticker?.lastPrice || 68940.6) : 1);
                                     const costPrice = spotCostBasis?.[symbol] || 0;
                                     const pnlAbsolute = costPrice > 0 ? (lastPrice - costPrice) * balance : 0;
                                     const pnlPercent = costPrice > 0 ? ((lastPrice - costPrice) / costPrice) * 100 : 0;
@@ -1119,7 +1236,7 @@ const TradeView = () => {
                                         <div key={`spot-${symbol}`} className="mb-6">
                                             <div className="flex items-center justify-between mb-3">
                                                 <div className="flex items-center gap-2">
-                                                    <div className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] text-white font-bold ${symbol === 'BTC' ? 'bg-[#f7931a]' : 'bg-[#10b981]'}`}>
+                                                    <div className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] text-white font-bold ${symbol === baseCoin ? 'bg-[#f7931a]' : 'bg-[#10b981]'}`}>
                                                         {symbol[0]}
                                                     </div>
                                                     <h4 className="text-[16px] font-bold text-gray-900">{symbol}/USDT</h4>
@@ -1137,7 +1254,7 @@ const TradeView = () => {
                                             <div className="grid grid-cols-3 gap-y-4 mb-6">
                                                 <div>
                                                     <p className="text-[12px] text-gray-400 font-medium mb-1 border-b border-dashed border-gray-200 w-max">Amount ({symbol})</p>
-                                                    <p className="text-[15px] font-bold text-gray-900">{balance.toFixed(symbol === 'BTC' ? 4 : 2)}</p>
+                                                    <p className="text-[15px] font-bold text-gray-900">{balance.toFixed(symbol === baseCoin ? 4 : 2)}</p>
                                                 </div>
                                                 <div className="text-center">
                                                     <p className="text-[12px] text-gray-400 font-medium mb-1 border-b border-dashed border-gray-200 mx-auto w-max">Value (USDT)</p>
@@ -1188,16 +1305,16 @@ const TradeView = () => {
             </div>
 
             {/* Mini Chart Drawer */}
-            <div className={`fixed bottom-[65px] w-full max-w-md bg-white transition-all duration-300 border-t border-gray-100 z-[100] ${isMiniChartOpen ? 'h-[320px]' : 'h-[44px]'}`}>
+            <div className={`fixed bottom-[65px] w-full max-w-md bg-white transition-all duration-300 border-t border-gray-100 z-[150] ${isMiniChartOpen ? 'h-[320px]' : 'h-[48px]'}`}>
                 <div
-                    className="flex items-center justify-between px-4 cursor-pointer h-12"
+                    className="flex items-center justify-between px-4 cursor-pointer h-12 -mt-1"
                     onClick={() => setIsMiniChartOpen(!isMiniChartOpen)}
                 >
-                    <span className="text-[15px] font-bold text-gray-900">BTC/USDT chart</span>
+                    <span className="text-[15px] font-bold text-gray-900">{currentSymbol.replace('USDT', '/USDT')} chart</span>
                     {isMiniChartOpen ? (
-                        <LuChevronDown className="w-6 h-6 text-gray-400" strokeWidth={2.5} />
+                        <PairChevronDown className="w-5 h-5 text-gray-400" />
                     ) : (
-                        <LuChevronUp className="w-6 h-6 text-gray-400" strokeWidth={2.5} />
+                        <LuChevronUp className="w-5 h-5 text-gray-400" />
                     )}
                 </div>
                 {isMiniChartOpen && (
@@ -1212,11 +1329,11 @@ const TradeView = () => {
                                     {int}
                                 </span>
                             ))}
-                            <span className="flex items-center gap-0.5">More <ChevronDown className="w-3.5 h-3.5" /></span>
+                            <span className="flex items-center gap-0.5">More <ArrowDropDown className="w-7 h-7" /></span>
                         </div>
                         <div className="h-[210px] w-full relative bg-white pb-10">
-                            <div className="absolute bottom-12 left-4 z-10 opacity-[0.08] pointer-events-none">
-                                <img src={trivLogo} alt="Triv" className="h-7" />
+                            <div className="absolute inset-0 flex items-center justify-center z-10 opacity-[0.05] pointer-events-none -translate-y-2">
+                                <img src={trivLogo} alt="Triv" className="h-16" />
                             </div>
                             <RealChart data={klines} height={210} />
                         </div>
@@ -1231,7 +1348,7 @@ const TradeView = () => {
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
                             exit={{ opacity: 0 }}
-                            className="fixed inset-0 bg-black/40 z-[100]"
+                            className="fixed inset-0 bg-black/40 z-[500]"
                             onClick={() => setIsPrecisionSheetOpen(false)}
                         />
                         <motion.div
@@ -1239,12 +1356,12 @@ const TradeView = () => {
                             animate={{ y: 0 }}
                             exit={{ y: '100%' }}
                             transition={{ duration: 0.3, ease: 'easeOut' }}
-                            className="fixed bottom-0 left-0 right-0 bg-white rounded-t-[24px] z-[101] px-4 pb-8"
+                            className="fixed bottom-0 left-0 right-0 bg-white rounded-t-[24px] z-[501] px-4 pb-8"
                         >
                             <div className="flex flex-col items-center">
                                 <div className="w-12 h-1.5 bg-gray-200 rounded-full mt-3 mb-6" onClick={() => setIsPrecisionSheetOpen(false)} />
                                 <div className="w-full flex flex-col gap-1">
-                                    {[0.1, 1, 10, 100].map((val) => (
+                                    {dynamicPrecisions.map((val) => (
                                         <button
                                             key={val}
                                             className={`w-full py-4 rounded-xl text-[16px] font-semibold flex items-center justify-between px-4 transition-colors ${precision === val ? 'bg-gray-50 text-gray-900' : 'text-gray-500'}`}
@@ -1271,7 +1388,7 @@ const TradeView = () => {
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
                             exit={{ opacity: 0 }}
-                            className="fixed inset-0 bg-black/40 z-[100]"
+                            className="fixed inset-0 bg-black/40 z-[500]"
                             onClick={() => setIsOrderTypeSheetOpen(false)}
                         />
                         <motion.div
@@ -1279,7 +1396,7 @@ const TradeView = () => {
                             animate={{ y: 0 }}
                             exit={{ y: '100%' }}
                             transition={{ duration: 0.3, ease: 'easeOut' }}
-                            className="fixed bottom-0 left-0 right-0 bg-white rounded-t-[24px] z-[101] px-4 pt-2 pb-10"
+                            className="fixed bottom-0 left-0 right-0 bg-white rounded-t-[24px] z-[501] px-4 pt-2 pb-10"
                         >
                             <div className="w-10 h-1 bg-gray-200 rounded-full mx-auto mb-6" />
                             <div className="flex items-center gap-2 mb-6 px-1">
@@ -1368,7 +1485,7 @@ const TradeView = () => {
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
                             exit={{ opacity: 0 }}
-                            className="fixed inset-0 bg-black/40 z-[100]"
+                            className="fixed inset-0 bg-black/40 z-[500]"
                             onClick={() => setIsAssetFilterSheetOpen(false)}
                         />
                         <motion.div
@@ -1376,7 +1493,7 @@ const TradeView = () => {
                             animate={{ y: 0 }}
                             exit={{ y: '100%' }}
                             transition={{ duration: 0.3, ease: 'easeOut' }}
-                            className="fixed bottom-0 left-0 right-0 bg-white rounded-t-[24px] z-[101] px-4 pb-10"
+                            className="fixed bottom-0 left-0 right-0 bg-white rounded-t-[24px] z-[501] px-4 pb-10"
                         >
                             <div className="flex flex-col items-center">
                                 <div className="w-12 h-1.5 bg-gray-200 rounded-full mt-3 mb-6" onClick={() => setIsAssetFilterSheetOpen(false)} />
@@ -1411,7 +1528,7 @@ const TradeView = () => {
                 isOpen={isConfirmModalOpen}
                 onClose={() => setIsConfirmModalOpen(false)}
                 onConfirm={handleFinalConfirm}
-                symbol="BTCUSDT"
+                symbol={currentSymbol}
                 side={tradeSide === 'buy' ? 'Buy' : 'Sell'}
                 price={orderType === 'Market' ? 'Market' : (pendingOrder?.p || 0).toLocaleString()}
                 amount={pendingOrder?.a || 0}
@@ -1432,7 +1549,7 @@ const TradeView = () => {
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
                             exit={{ opacity: 0 }}
-                            className="fixed inset-0 bg-black/40 z-[105]"
+                            className="fixed inset-0 bg-black/40 z-[500]"
                             onClick={() => setIsMarginModeSheetOpen(false)}
                         />
                         <motion.div
@@ -1440,7 +1557,7 @@ const TradeView = () => {
                             animate={{ y: 0 }}
                             exit={{ y: '100%' }}
                             transition={{ duration: 0.3, ease: 'easeOut' }}
-                            className="fixed bottom-0 left-0 right-0 bg-white rounded-t-[24px] z-[106] px-4 pt-2 pb-10"
+                            className="fixed bottom-0 left-0 right-0 bg-white rounded-t-[24px] z-[501] px-4 pt-2 pb-10"
                         >
                             <div className="w-10 h-1 bg-gray-200 rounded-full mx-auto mb-6" />
                             <h3 className="text-[18px] font-bold text-gray-900 mb-6 px-1">Margin mode</h3>
@@ -1470,7 +1587,7 @@ const TradeView = () => {
                 maxLeverage={100}
                 availableBalance={availableFuturesUSDT}
                 currentPrice={currentPrice}
-                symbol="BTCUSDT"
+                symbol={currentSymbol}
             />
 
             {/* Close All Confirmation Modal */}
@@ -1481,7 +1598,7 @@ const TradeView = () => {
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
                             exit={{ opacity: 0 }}
-                            className="fixed inset-0 bg-black/40 z-[200]"
+                            className="fixed inset-0 bg-black/40 z-[1000]"
                             onClick={() => setIsCloseAllConfirmOpen(false)}
                         />
                         <motion.div
@@ -1489,7 +1606,7 @@ const TradeView = () => {
                             animate={{ scale: 1, opacity: 1, x: '-50%', y: '-50%' }}
                             exit={{ scale: 0.9, opacity: 0, x: '-50%', y: '-50%' }}
                             transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-                            className="fixed top-1/2 left-1/2 w-[90%] max-w-[340px] bg-white rounded-[24px] z-[201] overflow-hidden"
+                            className="fixed top-1/2 left-1/2 w-[90%] max-w-[340px] bg-white rounded-[24px] z-[1001] overflow-hidden"
                         >
                             <div className="p-6 flex flex-col items-center text-center">
                                 <div className="w-12 h-12 rounded-full bg-gray-900 flex items-center justify-center mb-4">

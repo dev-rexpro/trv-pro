@@ -58,11 +58,11 @@ const CardDepositView = () => {
     };
 
     return (
-        <div className="fixed inset-0 bg-white z-[60] flex flex-col pt-safe px-4 pb-0 overflow-y-auto no-scrollbar">
+        <div className="fixed inset-0 bg-white z-[300] flex flex-col pt-safe px-4 pb-0 overflow-y-auto no-scrollbar">
             {/* Header */}
             <div className="flex items-center justify-between py-4 sticky top-0 bg-white z-10">
                 <button
-                    onClick={() => step > 1 ? setStep(1) : setActivePage('home')}
+                    onClick={() => step > 1 ? setStep(1) : window.history.back()}
                     className="p-1 -ml-1 flex items-center justify-center text-slate-900"
                 >
                     <ChevronLeft size={28} />

@@ -22,7 +22,7 @@ const DepositBottomSheet = () => {
     if (!isVisible && !isDepositOptionOpen) return null;
 
     const handleSelect = (page: string) => {
-        setDepositOptionOpen(false);
+        window.history.back();
         setTimeout(() => setActivePage(page), 200);
     };
 
@@ -34,19 +34,19 @@ const DepositBottomSheet = () => {
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
-                        className="fixed inset-0 bg-black/40 z-[60]"
-                        onClick={() => setDepositOptionOpen(false)}
+                        className="fixed inset-0 bg-black/40 z-[500]"
+                        onClick={() => window.history.back()}
                     />
                     <motion.div
                         initial={{ y: "100%" }}
                         animate={{ y: 0 }}
                         exit={{ y: "100%" }}
                         transition={{ type: "spring", damping: 25, stiffness: 200 }}
-                        className="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-white rounded-t-3xl z-[70] overflow-hidden flex flex-col max-h-[85vh]"
+                        className="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-white rounded-t-3xl z-[501] overflow-hidden flex flex-col max-h-[85vh]"
                     >
                         <div className="flex justify-between items-center p-5 border-b border-slate-100">
                             <h2 className="text-[20px] font-bold text-slate-900">Deposit</h2>
-                            <button onClick={() => setDepositOptionOpen(false)} className="p-1.5 hover:bg-slate-100 rounded-full text-slate-400">
+                            <button onClick={() => window.history.back()} className="p-1.5 hover:bg-slate-100 rounded-full text-slate-400">
                                 <Close size={22} />
                             </button>
                         </div>
@@ -57,7 +57,7 @@ const DepositBottomSheet = () => {
                             <div className="flex items-center justify-between p-4 bg-white border border-slate-100 rounded-2xl mb-6 cursor-pointer hover:bg-slate-50 transition-colors" onClick={() => handleSelect('deposit-crypto')}>
                                 <div className="flex items-center gap-4">
                                     <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-700">
-                                        <ArrowDown size={18} strokeWidth={2.5} />
+                                        <ArrowDown size={18} />
                                     </div>
                                     <div>
                                         <div className="font-bold text-[15px] text-slate-900">Deposit Crypto</div>

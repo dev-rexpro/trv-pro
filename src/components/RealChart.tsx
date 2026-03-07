@@ -8,7 +8,7 @@ interface RealChartProps {
     pricePrecision?: number;
 }
 
-const RealChart: React.FC<RealChartProps> = ({ data, height = 200, pricePrecision = 2 }) => {
+const RealChart: React.FC<RealChartProps> = ({ data, height, pricePrecision = 2 }) => {
     const chartContainerRef = useRef<HTMLDivElement>(null);
     const chartRef = useRef<any>(null);
     const seriesRef = useRef<any>(null);
@@ -16,7 +16,18 @@ const RealChart: React.FC<RealChartProps> = ({ data, height = 200, pricePrecisio
     useEffect(() => {
         if (!chartContainerRef.current) return;
 
-        const chart = createChart(chartContainerRef.current, {
+        const container = chartContainerRef.current;
+
+        // Initial size detection
+        const getInitialSize = () => {
+            const h = height || container.clientHeight || 300;
+            const w = container.clientWidth || 300;
+            return { w, h };
+        };
+
+        const { w: initialWidth, h: initialHeight } = getInitialSize();
+
+        const chart = createChart(container, {
             layout: {
                 background: { type: ColorType.Solid, color: 'transparent' },
                 textColor: '#999999',
@@ -42,8 +53,8 @@ const RealChart: React.FC<RealChartProps> = ({ data, height = 200, pricePrecisio
             },
             handleScale: { axisPressedMouseMove: true },
             handleScroll: { axisPressedMouseMove: true },
-            width: chartContainerRef.current.clientWidth,
-            height: height,
+            width: initialWidth,
+            height: initialHeight,
         });
 
         const candlestickSeries = chart.addSeries(CandlestickSeries, {
@@ -62,17 +73,42 @@ const RealChart: React.FC<RealChartProps> = ({ data, height = 200, pricePrecisio
         chartRef.current = chart;
         seriesRef.current = candlestickSeries;
 
+        // Set initial data if available
+        if (data && data.length > 0) {
+            const seenTimes = new Set();
+            const uniqueData = data.filter(d => {
+                if (seenTimes.has(d.time)) return false;
+                seenTimes.add(d.time);
+                return true;
+            }).sort((a, b) => a.time - b.time);
+            candlestickSeries.setData(uniqueData);
+        }
+
         const handleResize = () => {
-            if (chartContainerRef.current && chartRef.current) {
-                chartRef.current.applyOptions({ width: chartContainerRef.current.clientWidth });
+            if (container && chartRef.current) {
+                const newWidth = container.clientWidth;
+                const newHeight = height || container.clientHeight;
+                if (newWidth > 0 && newHeight > 0) {
+                    chartRef.current.applyOptions({
+                        width: newWidth,
+                        height: newHeight
+                    });
+                }
             }
         };
 
-        window.addEventListener('resize', handleResize);
+        const resizeObserver = new ResizeObserver(handleResize);
+        resizeObserver.observe(container);
+
+        // Immediate call to ensure it matches the container right after setup
+        handleResize();
 
         return () => {
-            window.removeEventListener('resize', handleResize);
-            chart.remove();
+            resizeObserver.disconnect();
+            if (chartRef.current) {
+                chartRef.current.remove();
+                chartRef.current = null;
+            }
         };
     }, []);
 
@@ -91,7 +127,7 @@ const RealChart: React.FC<RealChartProps> = ({ data, height = 200, pricePrecisio
     }, [data]);
 
     return (
-        <div ref={chartContainerRef} className="w-full relative" style={{ height: `${height}px` }} />
+        <div ref={chartContainerRef} className="w-full h-full relative overflow-hidden" style={height ? { height: `${height}px` } : { height: '100%' }} />
     );
 };
 

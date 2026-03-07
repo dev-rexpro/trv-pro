@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { AnimatePresence } from 'motion/react';
 import useExchangeStore from '../stores/useExchangeStore';
 import type { CurrencyCode } from '../types';
-import { RxTriangleDown as ChevronDown } from 'react-icons/rx';
+import { MdOutlineArrowDropDown as ChevronDown } from 'react-icons/md';
 
 const CURRENCIES: CurrencyCode[] = ['USD', 'USDT', 'BTC', 'IDR'];
 

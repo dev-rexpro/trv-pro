@@ -25,14 +25,14 @@ const FavoritesBottomSheet = ({ isOpen, onClose, selected, onSelect, options = [
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
                         onClick={onClose}
-                        className="fixed inset-0 bg-black/40 z-[80]"
+                        className="fixed inset-0 bg-black/40 z-[1000]"
                     />
                     <motion.div
                         initial={{ y: "100%" }}
                         animate={{ y: 0 }}
                         exit={{ y: "100%" }}
                         transition={{ type: "spring", damping: 25, stiffness: 200 }}
-                        className="fixed bottom-0 left-0 right-0 bg-white rounded-t-3xl z-[90] flex flex-col pt-3 pb-safe max-h-[70vh] overflow-y-auto"
+                        className="fixed bottom-0 left-0 right-0 bg-white rounded-t-3xl z-[1001] flex flex-col pt-3 pb-safe max-h-[70vh] overflow-y-auto"
                     >
                         <div className="w-12 h-1.5 bg-slate-200 rounded-full mx-auto mb-4" />
 

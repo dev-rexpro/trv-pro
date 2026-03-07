@@ -2,7 +2,14 @@ import type { ExchangeRates, CurrencyCode } from '../types';
 
 export const formatPrice = (price: string | number): string => {
     const num = typeof price === 'string' ? parseFloat(price) : price;
-    return num.toLocaleString();
+    if (num === 0) return '0.00';
+    if (num >= 1000) return num.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    if (num >= 50) return num.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 3 });
+    if (num >= 1) return num.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 4 });
+    if (num >= 0.1) return num.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 5 });
+    if (num >= 0.01) return num.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 6 });
+    if (num >= 0.0001) return num.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 8 });
+    return num.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 10 });
 };
 
 export const formatVolume = (volume: string | number): string => {

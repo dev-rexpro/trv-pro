@@ -13,10 +13,10 @@ const ManageGroupsView = () => {
             animate={{ x: 0 }}
             exit={{ x: '100%' }}
             transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-            className="fixed inset-0 bg-white z-[60] flex flex-col"
+            className="fixed inset-0 bg-white z-[300] flex flex-col"
         >
             <div className="flex justify-between items-center px-4 py-4 border-b border-slate-100">
-                <LuChevronLeft size={24} className="text-slate-900 cursor-pointer" onClick={() => setManageGroupsOpen(false)} />
+                <LuChevronLeft size={24} className="text-slate-900 cursor-pointer" onClick={() => window.history.back()} />
                 <h2 className="text-[18px] font-bold text-slate-900">Manage groups</h2>
                 <LuPlus size={24} className="text-slate-900 cursor-pointer" />
             </div>

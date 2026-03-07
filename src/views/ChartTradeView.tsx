@@ -1,8 +1,10 @@
 // @ts-nocheck
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
-import { motion } from 'motion/react';
+import { motion, AnimatePresence } from 'motion/react';
 import useExchangeStore from '../stores/useExchangeStore';
-import { fetchSingleTicker } from '../utils/api';
+import { fetchSingleTicker, fetchKlines } from '../utils/api';
+import { formatPrice } from '../utils/format';
+import RealChart from '../components/RealChart';
 import { useOrderBookSocket } from '../hooks/useOrderBookSocket';
 import { useTickerSocket } from '../hooks/useTickerSocket';
 import {
@@ -28,6 +30,9 @@ import {
     FiPenTool as PenTool
 } from 'react-icons/fi';
 import { RxTriangleDown as ChevronDown } from 'react-icons/rx';
+import { MdOutlineArrowDropDown as ArrowDropDown } from 'react-icons/md';
+import { LuPencilRuler, LuChartNoAxesCombined, LuBolt } from "react-icons/lu";
+import trivLogo from '../assets/triv-logo.svg';
 
 const INTERVALS = ['5m', '15m', '1h', '4h', '1D'];
 
@@ -39,6 +44,7 @@ const ChartTradeView = () => {
     const [isLoading, setIsLoading] = useState(false);
     const [fetchedTicker, setFetchedTicker] = useState<any>(null);
     const [isChartExpanded, setIsChartExpanded] = useState(false);
+    const [klines, setKlines] = useState<any[]>([]);
 
     const isFutures = tradeType === 'futures';
     const { orderBook } = useOrderBookSocket(selectedCoin, isFutures ? 'futures' : 'spot', 10);
@@ -98,17 +104,22 @@ const ChartTradeView = () => {
         return isFutures ? `BINANCE:${symbol}.P` : `BINANCE:${symbol}`;
     }, [selectedCoin, isFutures]);
 
-    // Interval mapping for TradingView
-    const tvInterval = useMemo(() => {
-        const map: any = { '5m': '5', '15m': '15', '1h': '60', '4h': '240', '1D': 'D' };
-        return map[interval] || '60';
+    // Interval mapping for TradingView -> Actually now for Binance API
+    const apiInterval = useMemo(() => {
+        const map: any = { '5m': '5m', '15m': '15m', '1h': '1h', '4h': '4h', '1D': '1d' };
+        return map[interval] || '1h';
     }, [interval]);
 
-    const formatPrice = (p: number) => {
-        if (p >= 10) return p.toLocaleString(undefined, { maximumFractionDigits: 2 });
-        if (p >= 0.01) return p.toLocaleString(undefined, { minimumFractionDigits: 4, maximumFractionDigits: 4 });
-        return p.toLocaleString(undefined, { maximumSignificantDigits: 4 });
-    };
+    // Fetch Klines
+    useEffect(() => {
+        let cancelled = false;
+        fetchKlines(selectedCoin, apiInterval, 500, tradeType).then(data => {
+            if (!cancelled) setKlines(data);
+        });
+        return () => { cancelled = true; };
+    }, [selectedCoin, apiInterval, tradeType]);
+
+
 
     const formatVol = (v: number) => {
         if (!v) return '0';
@@ -131,18 +142,24 @@ const ChartTradeView = () => {
             className="flex flex-col min-h-screen bg-white pb-20 relative overflow-x-hidden"
         >
             {/* Header */}
-            <div className="px-4 pt-4 pb-2 sticky top-0 bg-white z-20">
+            <div className={`px-4 pt-4 pb-2 sticky top-0 bg-white ${isChartExpanded ? 'z-[80]' : 'z-20'}`}>
                 <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-3">
-                        <ChevronLeft className="w-6 h-6 text-gray-800 cursor-pointer" onClick={() => setActivePage('trade')} />
+                        <ChevronLeft className="w-6 h-6 text-gray-800 cursor-pointer" onClick={() => isChartExpanded ? setIsChartExpanded(false) : window.history.back()} />
                         <div>
                             <div className="flex items-center gap-2 cursor-pointer" onClick={() => setPairPickerOpen(true)}>
-                                <h1 className="text-xl font-bold text-gray-900 tracking-tight">{selectedCoin}</h1>
-                                {isFutures && <span className="bg-yellow-100 text-yellow-700 text-[10px] font-bold px-1.5 py-0.5 rounded">Perp</span>}
-                                <ChevronDown className="w-4 h-4 text-gray-500" />
+                                <h1 className="text-xl font-bold text-gray-900 tracking-tight">{selectedCoin.replace('USDT', '/USDT')}</h1>
+                                <span className="text-[11px] font-bold text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded">Spot</span>
+                                <span className="text-[11px] font-bold text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded">10x</span>
+                                <ArrowDropDown className="w-6 h-6 text-slate-500 mt-0.5" />
                             </div>
-                            <div className={`text-[12px] font-bold mt-1 ${isPositive ? 'text-green-500' : 'text-red-500'}`}>
-                                {isPositive ? '+' : ''}{priceChange.toFixed(2)}%
+                            <div className="flex items-center gap-2 mt-0.5">
+                                <span className={`text-[12px] font-bold ${isPositive ? 'text-green-500' : 'text-red-500'}`}>
+                                    {formatPrice(lastPrice)}
+                                </span>
+                                <span className={`text-[12px] font-bold ${isPositive ? 'text-green-500' : 'text-red-500'}`}>
+                                    {isPositive ? '+' : ''}{priceChange.toFixed(2)}%
+                                </span>
                             </div>
                         </div>
                     </div>
@@ -225,7 +242,7 @@ const ChartTradeView = () => {
                                         {INTERVALS.map((iv) => (
                                             <button key={iv} onClick={() => setInterval_(iv)} className={interval === iv ? 'text-slate-900 font-bold bg-slate-100 px-2 py-0.5 rounded-full' : ''}>{iv}</button>
                                         ))}
-                                        <button className="flex items-center gap-0.5">More <ChevronDown className="w-3 h-3 mt-0.5" /></button>
+                                        <button className="flex items-center gap-0.5">More <ArrowDropDown className="w-7 h-7 mt-0.5" /></button>
                                         <button>Mcap</button>
                                     </div>
                                     <div className="flex gap-4 text-slate-700">
@@ -236,106 +253,143 @@ const ChartTradeView = () => {
                             </>
                         )}
 
-                        <div className={`relative ${isChartExpanded ? 'fixed inset-0 z-[60] bg-white flex flex-col' : 'px-1'}`}>
+                        <AnimatePresence>
                             {isChartExpanded && (
-                                <div className="p-4 border-b flex justify-between items-center bg-white">
-                                    <div className="flex items-center gap-2">
-                                        <h2 className="font-bold text-lg">{selectedCoin} {isFutures && 'Perpetual'}</h2>
-                                        <span className={`text-sm ${isPositive ? 'text-green-500' : 'text-red-500'}`}>{isPositive ? '+' : ''}{priceChange.toFixed(2)}%</span>
+                                <motion.div
+                                    initial={{ opacity: 0, scale: 0.98, y: 10 }}
+                                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                                    exit={{ opacity: 0, scale: 0.98, y: 10 }}
+                                    transition={{ type: "spring", damping: 25, stiffness: 200 }}
+                                    className="fixed top-[72px] bottom-[70px] left-0 right-0 z-[60] bg-white flex flex-col"
+                                >
+                                    {/* Chart Area */}
+                                    <div className="flex-1 relative w-full overflow-hidden min-h-0">
+                                        <div className="absolute inset-0">
+                                            <RealChart
+                                                data={klines}
+                                                pricePrecision={lastPrice > 1 ? 2 : 4}
+                                            />
+                                        </div>
+
+                                        {/* Watermark Logo */}
+                                        <div className="absolute pointer-events-none z-10 opacity-[0.08] bottom-4 left-12">
+                                            <img src={trivLogo} alt="Triv Watermark" className="h-8" />
+                                        </div>
+
+                                        <button
+                                            onClick={() => setIsChartExpanded(false)}
+                                            className="absolute bottom-4 left-4 p-1.5 bg-white/80 border border-slate-200 rounded shadow-sm z-20 hover:bg-white transition-colors"
+                                        >
+                                            <Minimize2 className="w-4 h-4 text-gray-600" />
+                                        </button>
                                     </div>
-                                    <button onClick={() => setIsChartExpanded(false)} className="p-2 hover:bg-slate-100 rounded-full">
-                                        <XIcon className="w-6 h-6" />
-                                    </button>
-                                </div>
+
+                                    {/* Interval Selector (Fixed Height) */}
+                                    <div className="h-[48px] bg-white border-t border-gray-100 flex items-center justify-between px-4 text-[12px] text-gray-500 font-bold shrink-0">
+                                        <div className="flex gap-5">
+                                            {INTERVALS.map((iv) => (
+                                                <button key={iv} onClick={() => setInterval_(iv)} className={interval === iv ? 'text-gray-900 bg-gray-100 px-2 py-1 rounded-[6px]' : ''}>{iv}</button>
+                                            ))}
+                                            <button className="flex items-center gap-0.5">More <ArrowDropDown className="w-7 h-7" /></button>
+                                            <button>Mcap</button>
+                                        </div>
+                                    </div>
+                                </motion.div>
                             )}
+                        </AnimatePresence>
 
-                            <div className={`w-full ${isChartExpanded ? 'flex-1' : 'h-[320px]'}`}>
-                                <iframe
-                                    id="tradingview_chart"
-                                    src={`https://s.tradingview.com/widgetembed/?frameElementId=tradingview_chart&symbol=${tvSymbol}&interval=${tvInterval}&hidesidetoolbar=0&symboledit=1&saveimage=1&toolbarbg=f1f3f6&studies=%5B%5D&theme=light&style=1&timezone=Etc%2FUTC&studies_overrides=%7B%7D&overrides=%7B%7D&enabled_features=%5B%5D&disabled_features=%5B%5D&locale=en&utm_source=binance.com&utm_medium=widget&utm_campaign=chart&utm_term=${tvSymbol}`}
-                                    style={{ width: '100%', height: '100%', border: 'none' }}
-                                    title="TradingView Chart"
-                                />
-                            </div>
+                        {!isChartExpanded && (
+                            <div className="relative px-1">
+                                <div className="w-full h-[320px] overflow-hidden relative">
+                                    <RealChart
+                                        data={klines}
+                                        height={320}
+                                        pricePrecision={lastPrice > 1 ? 2 : 4}
+                                    />
 
-                            {!isChartExpanded && (
+                                    {/* Watermark Logo */}
+                                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10 opacity-[0.1] -translate-y-8">
+                                        <img src={trivLogo} alt="Triv Watermark" className="w-48" />
+                                    </div>
+                                </div>
+
                                 <button
                                     onClick={() => setIsChartExpanded(true)}
                                     className="absolute bottom-4 left-4 p-1.5 bg-white/80 border border-slate-200 rounded shadow-sm z-10 hover:bg-white transition-colors"
                                 >
                                     <Maximize2 className="w-4 h-4 text-gray-600" />
                                 </button>
-                            )}
-                        </div>
-
-                        {/* Order Book Section Header */}
-                        {!isChartExpanded && (
-                            <div className="px-4 py-3 flex gap-4 overflow-x-auto no-scrollbar border-b border-slate-100 text-[11px] text-slate-500 font-medium whitespace-nowrap">
-
-                                <button>VOL</button>
-                                <button>MA</button>
-                                <button className="text-slate-900 font-bold border-b border-slate-900 -mb-3 pb-3">EMA</button>
-                                <button>BOLL</button>
-                                <button>SAR</button>
-                                <button>RESIST</button>
-                                <button>SUPERTREND</button>
-                                <button>Envelope</button>
                             </div>
                         )}
 
-                        {/* Order Book */}
-                        <div className="px-4 mt-2">
-                            <div className="flex gap-6 border-b border-slate-100">
-                                {['Order book', 'Depth', 'Last trades', 'Market events'].map(tab => (
-                                    <button
-                                        key={tab}
-                                        className={`pb-2 text-[14px] font-semibold transition-colors ${tab === 'Order book' ? 'text-slate-900 border-b-2 border-slate-900' : 'text-slate-500'
-                                            }`}
-                                    >
-                                        {tab}
-                                    </button>
-                                ))}
-                            </div>
-
-                            <div className="flex justify-between text-[11px] text-slate-400 py-3 font-medium">
-                                <div>Buy ({baseAsset})</div>
-                                <div className="flex items-center gap-1 bg-slate-100 px-2 py-0.5 rounded text-slate-700">0.1 <ChevronDown className="w-3 h-3" /></div>
-                                <div>Sell ({baseAsset})</div>
-                            </div>
-
-                            <div className="flex gap-2 text-[11px] pb-6">
-                                <div className="flex-1 space-y-[2px]">
-                                    {orderBook.bids.slice(0, 10).map(([price, qty], i) => {
-                                        const maxQty = Math.max(...orderBook.bids.slice(0, 10).map(b => parseFloat(b[1])), 0.0001);
-                                        const pct = (parseFloat(qty) / maxQty) * 100;
-                                        return (
-                                            <div key={i} className="flex justify-between relative h-5 items-center">
-                                                <div className="absolute right-0 top-0 h-full bg-[#00C076] opacity-[0.12]" style={{ width: `${pct}%` }}></div>
-                                                <span className="text-slate-600 relative z-10">{parseFloat(qty).toFixed(3)}</span>
-                                                <span className="text-[#00C076] font-medium relative z-10">{formatPrice(parseFloat(price))}</span>
-                                            </div>
-                                        );
-                                    })}
+                        {!isChartExpanded && (
+                            <>
+                                {/* Order Book Section Header */}
+                                <div className="px-4 py-3 flex gap-4 overflow-x-auto no-scrollbar border-b border-slate-100 text-[11px] text-slate-500 font-medium whitespace-nowrap">
+                                    <button>VOL</button>
+                                    <button>MA</button>
+                                    <button className="text-slate-900 font-bold border-b border-slate-900 -mb-3 pb-3">EMA</button>
+                                    <button>BOLL</button>
+                                    <button>SAR</button>
+                                    <button>RESIST</button>
+                                    <button>SUPERTREND</button>
+                                    <button>Envelope</button>
                                 </div>
-                                <div className="flex-1 space-y-[2px]">
-                                    {orderBook.asks.slice(0, 10).map(([price, qty], i) => {
-                                        const maxQty = Math.max(...orderBook.asks.slice(0, 10).map(a => parseFloat(a[1])), 0.0001);
-                                        const pct = (parseFloat(qty) / maxQty) * 100;
-                                        return (
-                                            <div key={i} className="flex justify-between relative h-5 items-center">
-                                                <div className="absolute left-0 top-0 h-full bg-[#FF4D5B] opacity-[0.12]" style={{ width: `${pct}%` }}></div>
-                                                <span className="text-[#FF4D5B] font-medium relative z-10">{formatPrice(parseFloat(price))}</span>
-                                                <span className="text-slate-600 relative z-10">{parseFloat(qty).toFixed(3)}</span>
-                                            </div>
-                                        );
-                                    })}
+
+                                {/* Order Book */}
+                                <div className="px-4 mt-2">
+                                    <div className="flex gap-6 border-b border-slate-100">
+                                        {['Order book', 'Depth', 'Last trades', 'Market events'].map(tab => (
+                                            <button
+                                                key={tab}
+                                                className={`pb-2 text-[14px] font-semibold transition-colors ${tab === 'Order book' ? 'text-slate-900 border-b-2 border-slate-900' : 'text-slate-500'}`}
+                                            >
+                                                {tab}
+                                            </button>
+                                        ))}
+                                    </div>
+
+                                    <div className="flex justify-between text-[11px] text-slate-400 py-3 font-medium">
+                                        <div>Buy ({baseAsset})</div>
+                                        <div className="flex items-center gap-1 bg-slate-100 px-2 py-0.5 rounded text-slate-700">0.1 <ArrowDropDown className="w-7 h-7" /></div>
+                                        <div>Sell ({baseAsset})</div>
+                                    </div>
+
+                                    <div className="flex gap-2 text-[11px] pb-6">
+                                        <div className="flex-1 space-y-[2px]">
+                                            {orderBook.bids.slice(0, 10).map(([price, qty], i) => {
+                                                const maxQty = Math.max(...orderBook.bids.slice(0, 10).map(b => parseFloat(b[1])), 0.0001);
+                                                const pct = (parseFloat(qty) / maxQty) * 100;
+                                                return (
+                                                    <div key={i} className="flex justify-between relative h-5 items-center">
+                                                        <div className="absolute right-0 top-0 h-full bg-[#00C076] opacity-[0.12]" style={{ width: `${pct}%` }}></div>
+                                                        <span className="text-slate-600 relative z-10">{parseFloat(qty).toFixed(3)}</span>
+                                                        <span className="text-[#00C076] font-medium relative z-10">{formatPrice(parseFloat(price))}</span>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                        <div className="flex-1 space-y-[2px]">
+                                            {orderBook.asks.slice(0, 10).map(([price, qty], i) => {
+                                                const maxQty = Math.max(...orderBook.asks.slice(0, 10).map(a => parseFloat(a[1])), 0.0001);
+                                                const pct = (parseFloat(qty) / maxQty) * 100;
+                                                return (
+                                                    <div key={i} className="flex justify-between relative h-5 items-center">
+                                                        <div className="absolute left-0 top-0 h-full bg-[#FF4D5B] opacity-[0.12]" style={{ width: `${pct}%` }}></div>
+                                                        <span className="text-[#FF4D5B] font-medium relative z-10">{formatPrice(parseFloat(price))}</span>
+                                                        <span className="text-slate-600 relative z-10">{parseFloat(qty).toFixed(3)}</span>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
                                 </div>
-                            </div>
-                        </div>
+                            </>
+                        )}
                     </div>
                 )}
 
-                {activeTab === 'Info' && (
+                {activeTab === 'Info' && !isChartExpanded && (
                     <div className="px-4 py-4">
                         <div className="flex gap-4 border-b border-slate-100 pb-2 mb-5">
                             {['Crypto info', 'Trading rules', 'Funding rate'].map((t, i) => (
@@ -375,7 +429,7 @@ const ChartTradeView = () => {
                             <p className="text-[13px] text-slate-600 leading-relaxed mb-1">
                                 {baseAsset === 'BTC' ? 'Bitcoin is a digital asset and a payment system that was first proposed in 2008 by an anonymous person or group of people under the name Satoshi Nakamoto. Bitcoin is decentralized and not subject to government or central authority...' : `${baseAsset} is a decentralized cryptocurrency asset.`}
                             </p>
-                            <span className="text-[13px] text-slate-900 font-bold cursor-pointer">Show more <ChevronDown size={14} className="inline align-middle" /></span>
+                            <span className="text-[13px] text-slate-900 font-bold cursor-pointer">Show more <ArrowDropDown size={14} className="inline align-middle" /></span>
                         </div>
                         <div className="mt-6 flex flex-wrap gap-2 pb-6">
                             <button className="px-3 py-1.5 bg-slate-100 rounded-full text-[12px] font-bold text-slate-700">𝕏 X</button>
@@ -387,7 +441,7 @@ const ChartTradeView = () => {
                     </div>
                 )}
 
-                {activeTab === 'Data' && (
+                {activeTab === 'Data' && !isChartExpanded && (
                     <div className="px-4 py-4 bg-slate-50 min-h-full">
                         {isFutures ? (
                             <div className="space-y-4 pb-8">
@@ -457,61 +511,30 @@ const ChartTradeView = () => {
             </div>
 
             {/* Bottom bar */}
-            <div className="fixed bottom-0 w-full max-w-md bg-white border-t border-slate-100 px-4 py-2 flex items-center justify-between gap-4 z-20">
-                {!isChartExpanded && (
-                    <button
-                        className="flex-[1.5] bg-[#00C076] text-white font-bold py-3.5 rounded-full text-[15px] text-center shadow-sm shadow-[#00C076]/20 active:scale-[0.98] transition-all whitespace-nowrap"
-                        onClick={() => {
-                            useExchangeStore.setState({ selectedCoin, activePage: isFutures ? 'futures' : 'trade' });
-                        }}
-                    >
-                        Trade
-                    </button>
-                )}
+            <div className={`fixed bottom-0 w-full max-w-md border-t border-slate-100 px-4 py-2 flex items-center justify-between gap-4 z-[70] ${isChartExpanded ? 'bg-[#fcfcfc] h-[70px]' : 'bg-white'}`}>
+                <button
+                    className={`flex-1 ${isChartExpanded ? 'max-w-[180px]' : 'max-w-[150px]'} bg-black text-white font-bold py-2.5 rounded-full text-[15px] text-center active:scale-[0.98] transition-all whitespace-nowrap`}
+                    onClick={() => {
+                        useExchangeStore.setState({ selectedCoin, activePage: isFutures ? 'futures' : 'trade' });
+                    }}
+                >
+                    Trade
+                </button>
 
-                {isChartExpanded && (
-                    <button
-                        className="flex-1 py-3.5 bg-slate-900 text-white font-bold rounded-full text-[15px] shadow-sm max-w-[150px] mx-auto active:scale-[0.98] transition-all"
-                        onClick={() => {
-                            useExchangeStore.setState({ selectedCoin, activePage: isFutures ? 'futures' : 'trade' });
-                        }}
-                    >
-                        Trade
-                    </button>
-                )}
-                <div className={`flex ${isChartExpanded ? 'gap-8 pr-4' : 'gap-5 pr-1'} items-center`}>
-                    {isChartExpanded ? (
-                        <>
-                            <div className="flex flex-col items-center gap-1 text-slate-500 cursor-pointer hover:text-slate-700 transition-colors">
-                                <PenTool className="w-5 h-5" />
-                                <span className="text-[10px] font-medium">Drawings</span>
-                            </div>
-                            <div className="flex flex-col items-center gap-1 text-slate-500 cursor-pointer hover:text-slate-700 transition-colors">
-                                <Activity className="w-5 h-5" />
-                                <span className="text-[10px] font-medium">Indicators</span>
-                            </div>
-                            <div className="flex flex-col items-center gap-1 text-slate-500 relative cursor-pointer hover:text-slate-700 transition-colors">
-                                <Settings className="w-5 h-5" />
-                                <span className="text-[10px] font-medium">Settings</span>
-                                <span className="absolute top-0 right-1 w-1.5 h-1.5 bg-red-500 rounded-full"></span>
-                            </div>
-                        </>
-                    ) : (
-                        <>
-                            <div className="flex flex-col items-center gap-1 text-slate-500 cursor-pointer hover:text-slate-700 transition-colors">
-                                <LayoutGrid className="w-5 h-5" />
-                                <span className="text-[10px] font-medium">Grid</span>
-                            </div>
-                            <div className="flex flex-col items-center gap-1 text-slate-500 cursor-pointer hover:text-slate-700 transition-colors">
-                                <RefreshCw className="w-5 h-5" />
-                                <span className="text-[10px] font-medium">{isFutures ? 'Spot' : 'Perp'}</span>
-                            </div>
-                            <div className="flex flex-col items-center gap-1 text-slate-500 cursor-pointer hover:text-slate-700 transition-colors">
-                                <BellPlus className="w-5 h-5" />
-                                <span className="text-[10px] font-medium">Alerts</span>
-                            </div>
-                        </>
-                    )}
+                <div className="flex gap-6 pr-2 items-center translate-y-1">
+                    <div className="flex flex-col items-center gap-1 text-slate-500 cursor-pointer hover:text-slate-900 transition-colors group">
+                        <LuPencilRuler className="w-6 h-6 text-slate-900" />
+                        <span className="text-[10px] font-medium text-slate-400">Drawings</span>
+                    </div>
+                    <div className="flex flex-col items-center gap-1 text-slate-500 cursor-pointer hover:text-slate-900 transition-colors group">
+                        <LuChartNoAxesCombined className="w-6 h-6 text-slate-900" />
+                        <span className="text-[10px] font-medium text-slate-400">Indicators</span>
+                    </div>
+                    <div className="flex flex-col items-center gap-1 text-slate-500 relative cursor-pointer hover:text-slate-900 transition-colors group">
+                        <LuBolt className="w-6 h-6 text-slate-900" />
+                        <span className="text-[10px] font-medium text-slate-400">Settings</span>
+                        <span className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 bg-red-500 rounded-full border border-white"></span>
+                    </div>
                 </div>
             </div>
         </motion.div >
