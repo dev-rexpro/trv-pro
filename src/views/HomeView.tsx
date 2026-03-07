@@ -164,17 +164,19 @@ const HomeView = () => {
                     className="bg-[#F5F7F9] w-[140px] py-1 px-4 rounded-full flex items-center justify-center gap-1 cursor-pointer active:scale-95 transition-transform"
                 >
                     <span className="text-[14px] font-bold text-slate-800">{currentMode}</span>
-                    <ChevronDown className="w-6 h-6 text-slate-500" />
+                    <div className="text-slate-500 flex items-center"><ChevronDown size={20} /></div>
                 </div>
                 <div className="flex gap-4 text-slate-800">
-                    <Headphones size={24} strokeWidth={1.5} />
-                    <User size={24} strokeWidth={1.5} />
+                    <Headphones size={24} />
+                    <User size={24} />
                 </div>
             </div>
 
             <div className="px-4 mt-1">
                 <div className="relative mb-4" onClick={() => setSearchOpen(true)}>
-                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+                    <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">
+                        <Search size={18} />
+                    </div>
                     <div className="w-full bg-[#F5F7F9] border-none rounded-full py-3 pl-11 pr-4 h-[44px] flex items-center">
                         <AnimatedPlaceholder className="ml-0" />
                     </div>
@@ -271,7 +273,9 @@ const HomeView = () => {
                                 ))}
                             </div>
                             <div className="flex justify-center mt-6 h-8 cursor-pointer items-end" onClick={(e) => { e.stopPropagation(); setIsPnlExpanded(false); }}>
-                                <LuChevronUp className="text-slate-400" size={24} />
+                                <div className="text-slate-400">
+                                    <LuChevronUp size={24} />
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -285,9 +289,9 @@ const HomeView = () => {
                 <div className="grid grid-cols-4 gap-4 mb-6">
                     {[
                         { label: 'Earn', icon: <div className="relative"><div className="w-6 h-6 rounded-full border-2 border-slate-800 flex items-center justify-center text-[10px] font-bold">1</div><div className="absolute -top-1 -right-1 w-4 h-4 bg-white rounded-full border-2 border-slate-800 flex items-center justify-center"><div className="w-1.5 h-1.5 bg-slate-800 rounded-full" /></div></div> },
-                        { label: 'My rewards', icon: <Ticket size={28} strokeWidth={1.5} className="text-slate-800" /> },
-                        { label: 'Referral', icon: <Gift size={28} strokeWidth={1.5} className="text-slate-800" /> },
-                        { label: 'More', icon: <Grid size={28} strokeWidth={1.5} className="text-slate-800" /> }
+                        { label: 'My rewards', icon: <div className="text-slate-800"><Ticket size={28} /></div> },
+                        { label: 'Referral', icon: <div className="text-slate-800"><Gift size={28} /></div> },
+                        { label: 'More', icon: <div className="text-slate-800"><Grid size={28} /></div> }
                     ].map(item => (
                         <div key={item.label} className="flex flex-col items-center gap-2">
                             <div className="h-8 flex items-center justify-center">{item.icon}</div>
@@ -302,7 +306,7 @@ const HomeView = () => {
                             <div className="absolute inset-0 border border-slate-200 rounded-full" />
                             <div className="absolute inset-1 border border-slate-200 rounded-full" />
                             <div className="w-8 h-8 bg-slate-800 rounded-full flex items-center justify-center z-10">
-                                <User size={16} className="text-white" />
+                                <div className="text-white"><User size={16} /></div>
                             </div>
                             <div className="absolute bottom-0 right-0 w-4 h-4 bg-black rounded-full border-2 border-white flex items-center justify-center text-[8px] text-white font-bold z-20">T</div>
                             <div className="absolute top-0 left-0 w-3 h-3 bg-black rounded-full border-2 border-white flex items-center justify-center text-[6px] text-white font-bold z-20">S</div>
@@ -335,7 +339,7 @@ const HomeView = () => {
                                                 }}
                                                 className="p-0.5 hover:bg-slate-200 rounded-full transition-colors flex items-center justify-center -mr-1"
                                             >
-                                                <ChevronDown className="w-5 h-5" />
+                                                <div className="flex items-center justify-center w-5 h-5"><ChevronDown size={20} /></div>
                                             </div>
                                         </div>
                                     ) : tab}
@@ -343,7 +347,7 @@ const HomeView = () => {
                                 </button>
                             ))}
                         </div>
-                        <Filter size={16} className="text-slate-400" />
+                        <div className="text-slate-400 flex items-center"><Filter size={16} /></div>
                     </div>
 
                     <div className="mt-2 space-y-1">
@@ -463,7 +467,7 @@ const NewsSection = () => {
                         onClick={() => setActiveNewsTab(tab)}
                         className={`whitespace-nowrap relative ${activeNewsTab === tab ? 'text-slate-900 font-bold' : ''}`}
                     >
-                        <div className={`px-3 py-1.5 rounded-full transition-colors ${activeNewsTab === tab ? 'bg-[#F5F7F9]' : ''}`}>
+                        <div className={`px-3 py-2 rounded-full transition-colors ${activeNewsTab === tab ? 'bg-[#F5F7F9]' : ''}`}>
                             {tab}
                         </div>
                     </button>
@@ -564,7 +568,7 @@ const NewsSection = () => {
                                             <span className="text-[11px] text-slate-400 font-medium">{item.players} participants</span>
                                         </div>
                                     </div>
-                                    <ChevronRight className="w-5 h-5 text-slate-300 group-hover:text-slate-500 transition-colors" />
+                                    <div className="text-slate-300 group-hover:text-slate-500 transition-colors flex items-center"><ChevronRight size={20} /></div>
                                 </div>
                             ))}
                         </motion.div>
