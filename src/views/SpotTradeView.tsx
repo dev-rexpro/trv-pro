@@ -1,18 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import {
-    ChevronDown,
-    MoreHorizontal,
-    AlignRight,
-    Check,
-    ChevronRight,
-    Info,
-    Activity,
-    FileText,
-    LayoutGrid,
-    BarChart2,
-    PieChart,
-    Compass
-} from 'lucide-react';
+    LuChevronDown as ChevronDown,
+    LuMoveHorizontal as MoreHorizontal,
+    LuAlignRight as AlignRight,
+    LuCheck as Check,
+    LuChevronRight as ChevronRight,
+    LuInfo as Info,
+    LuActivity as Activity,
+    LuFileText as FileText,
+    LuLayoutGrid as LayoutGrid,
+    LuCompass as Compass
+} from 'react-icons/lu';
+import { HiOutlineChartBar as BarChart2, HiOutlineChartPie as PieChart } from 'react-icons/hi2';
 import { MdOutlineArrowDropDown as ArrowDropDown } from 'react-icons/md';
 import { formatPrice } from '../utils/format';
 
@@ -99,14 +98,18 @@ export default function SpotTradeView() {
         }
     };
 
-    const handleSliderChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const pct = parseInt(e.target.value);
+    const updateAmountByPercent = (pct: number) => {
         setSliderPercent(pct);
         if (pct === 0) {
             setAmountInput('');
         } else {
             setAmountInput((MAX_BTC * (pct / 100)).toFixed(8));
         }
+    };
+
+    const handleSliderChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const pct = parseInt(e.target.value);
+        updateAmountByPercent(pct);
     };
 
     const cycleOrderBookView = () => {
@@ -198,7 +201,7 @@ export default function SpotTradeView() {
                             <span className="font-semibold text-gray-400 pb-1">Bots</span>
                             <span className="font-semibold text-gray-400 pb-1">Convert</span>
                         </div>
-                        <AlignRight className="w-5 h-5 text-gray-800" />
+                        <div className="text-gray-800"><AlignRight size={20} /></div>
                     </div>
                 </div>
 
@@ -207,11 +210,11 @@ export default function SpotTradeView() {
                     <div className="flex items-center gap-2">
                         <h1 className="text-[22px] font-bold text-gray-900 leading-none">BTC/USDT</h1>
                         <span className="bg-gray-100 text-gray-500 text-[11px] font-bold px-1.5 py-[1px] rounded-[4px] leading-none mt-0.5">10x</span>
-                        <ArrowDropDown className="w-6 h-6 text-gray-500 mt-0.5" />
+                        <div className="text-gray-500 mt-0.5"><ArrowDropDown size={24} /></div>
                     </div>
                     <div className="flex items-center gap-4">
-                        <Activity className="w-5 h-5 text-gray-800 cursor-pointer" />
-                        <MoreHorizontal className="w-5 h-5 text-gray-800" />
+                        <div className="text-gray-800 cursor-pointer"><Activity size={20} /></div>
+                        <div className="text-gray-800"><MoreHorizontal size={20} /></div>
                     </div>
                 </div>
 
@@ -235,9 +238,9 @@ export default function SpotTradeView() {
 
                         <div className="bg-[#f5f5f5] rounded-lg px-3 h-[44px] mb-3 flex items-center justify-between cursor-pointer border border-transparent hover:border-gray-200">
                             <span className="font-semibold text-[14px] text-gray-800 flex items-center gap-1.5">
-                                Limit order <Info className="w-3.5 h-3.5 text-gray-400" />
+                                Limit order <div className="text-gray-400"><Info size={14} /></div>
                             </span>
-                            <ArrowDropDown className="w-7 h-7 text-gray-600" />
+                            <div className="text-gray-600 flex items-center"><ArrowDropDown size={28} /></div>
                         </div>
 
                         <div className="bg-[#f5f5f5] rounded-lg px-3 h-[44px] mb-3 flex flex-col justify-center border border-transparent focus-within:border-gray-300 transition-colors">
@@ -276,14 +279,17 @@ export default function SpotTradeView() {
                         </div>
 
                         {/* Precision Slider */}
-                        <div className="relative w-full h-8 flex items-center mb-4 mt-2 px-[6px]">
+                        <div className="relative w-full h-8 flex items-center mb-1.5 mt-0.5 px-[6px]">
                             <div className="absolute left-[6px] right-[6px] h-[3px] bg-gray-200">
                                 <div className="h-full transition-all duration-75 bg-gray-800" style={{ width: `${sliderPercent}%` }} />
                             </div>
-                            {/* Dots perfectly positioned at 0, 25, 50, 75, 100 */}
-                            <div className="absolute left-[6px] right-[6px] flex justify-between items-center h-full pointer-events-none">
+                            <div className="absolute left-[6px] right-[6px] flex justify-between items-center h-full z-40 pointer-events-none">
                                 {[0, 25, 50, 75, 100].map(val => (
-                                    <div key={val} className={`w-[9px] h-[9px] rounded-full border-[2px] z-10 transition-colors duration-75 ${sliderPercent >= val ? 'bg-gray-800 border-gray-800' : 'bg-white border-gray-300'}`} />
+                                    <div
+                                        key={val}
+                                        onClick={() => updateAmountByPercent(val)}
+                                        className={`w-[11px] h-[11px] rounded-full border-[2px] z-50 transition-colors duration-75 cursor-pointer pointer-events-auto bg-white ${sliderPercent >= val ? 'border-gray-800' : 'border-gray-300'}`}
+                                    />
                                 ))}
                             </div>
                             <input
@@ -291,14 +297,10 @@ export default function SpotTradeView() {
                                 onChange={handleSliderChange}
                                 className="absolute w-full h-full opacity-0 cursor-pointer z-30 left-0"
                             />
-                            {/* Thumb precision calculation: Center of dot is at 4.5px from edge of track (6px). 
-                  Start at 10.5px (6 + 4.5), End at width - 10.5px.
-                  Track width for calculation is 100% - 21px.
-              */}
                             <div
-                                className="absolute w-[15px] h-[15px] bg-white border-[3.5px] border-gray-800 rounded-full z-20 pointer-events-none transition-all duration-75 shadow-sm"
+                                className="absolute w-[15px] h-[15px] bg-white border-[3.5px] border-gray-800 rounded-full z-60 pointer-events-none transition-all duration-75 shadow-sm"
                                 style={{
-                                    left: `calc(10.5px + (${sliderPercent} / 100) * (100% - 21px))`,
+                                    left: `calc(11.5px + (${sliderPercent} / 100) * (100% - 23px))`,
                                     transform: 'translateX(-50%)'
                                 }}
                             />
@@ -335,7 +337,7 @@ export default function SpotTradeView() {
                         <div className="flex items-center justify-between mb-3 px-1 mt-1">
                             <label className="flex items-center gap-2 cursor-pointer" onClick={() => setIsTpSlEnabled(!isTpSlEnabled)}>
                                 <div className={`w-4 h-4 rounded-[3px] flex items-center justify-center border-2 ${isTpSlEnabled ? 'border-gray-900 bg-white' : 'border-gray-400'}`}>
-                                    {isTpSlEnabled && <Check className="w-3 h-3 text-gray-900 stroke-[4]" />}
+                                    {isTpSlEnabled && <div className="text-gray-900 flex items-center"><Check size={12} /></div>}
                                 </div>
                                 <span className="text-[13px] font-medium text-gray-600 border-b border-dashed border-gray-400 leading-none pb-[1px]">TP/SL</span>
                             </label>
@@ -393,7 +395,7 @@ export default function SpotTradeView() {
                                 <span className={`text-[18px] font-bold ${isPositive ? 'text-[#20b26c]' : 'text-[#ef454a]'}`}>
                                     {ticker ? formatPrice(ticker.lastPrice) : '--'}
                                 </span>
-                                <ChevronRight className="w-4 h-4 text-gray-400" />
+                                <div className="text-gray-400 flex items-center"><ChevronRight size={16} /></div>
                             </div>
                             <div className="text-gray-500 text-[11px] px-1 mt-0.5 font-medium">
                                 ≈${ticker ? formatPrice(ticker.lastPrice) : '--'}
@@ -441,7 +443,7 @@ export default function SpotTradeView() {
 
                         <div className="flex items-center gap-1.5 px-1">
                             <div className="flex-1 flex items-center justify-between bg-gray-50 border border-gray-100 px-2 h-[26px] rounded-[6px] text-[13px] font-semibold text-gray-600 cursor-pointer">
-                                0.1 <ArrowDropDown className="w-6 h-6 text-gray-400" />
+                                0.1 <ArrowDropDown size={24} color="#9ca3af" />
                             </div>
                             <div
                                 className="w-[26px] h-[26px] shrink-0 flex flex-col items-center justify-center gap-[3px] border border-gray-100 rounded-[6px] bg-gray-50 cursor-pointer"
@@ -463,11 +465,11 @@ export default function SpotTradeView() {
 
                 {/* Orders/Positions Tabs */}
                 <div className="border-b border-gray-100 px-4 flex items-center gap-3 overflow-x-auto no-scrollbar sticky top-[52px] z-20 bg-white h-[48px]">
-                    <span className="font-bold text-[15px] text-gray-900 flex items-center gap-1 h-full shrink-0">Orders (0) <ArrowDropDown className="w-5 h-5" /></span>
-                    <span className="font-semibold text-[15px] text-gray-500 flex items-center gap-1 h-full shrink-0">Positions (0) & assets <ArrowDropDown className="w-5 h-5" /></span>
+                    <span className="font-bold text-[15px] text-gray-900 flex items-center gap-1 h-full shrink-0">Orders (0) <div className="text-gray-400"><ArrowDropDown size={20} /></div></span>
+                    <span className="font-semibold text-[15px] text-gray-500 flex items-center gap-1 h-full shrink-0">Positions (0) & assets <div className="text-gray-400"><ArrowDropDown size={20} /></div></span>
                     <span className="font-semibold text-[15px] text-gray-500 flex items-center h-full shrink-0">Bots (0)</span>
                     <div className="ml-auto sticky right-0 bg-white pl-2 flex items-center h-full shrink-0">
-                        <FileText className="w-5 h-5 text-gray-800" />
+                        <div className="text-gray-800 flex items-center"><FileText size={20} /></div>
                     </div>
                 </div>
 
@@ -475,7 +477,7 @@ export default function SpotTradeView() {
                 <div className="px-4 py-2.5 flex items-center justify-between relative z-10 bg-white border-b border-gray-50">
                     <label className="flex items-center gap-2 cursor-pointer" onClick={() => setIsCurrentSymbolChecked(!isCurrentSymbolChecked)}>
                         <div className={`w-[15px] h-[15px] rounded-[3px] flex items-center justify-center border-[1.5px] transition-colors ${isCurrentSymbolChecked ? 'border-gray-900 bg-gray-900' : 'border-gray-300 bg-white'}`}>
-                            {isCurrentSymbolChecked && <Check className="w-3 h-3 text-white stroke-[4]" />}
+                            {isCurrentSymbolChecked && <div className="text-white flex items-center"><Check size={12} /></div>}
                         </div>
                         <span className="text-[13px] font-medium text-gray-800">Current symbol</span>
                     </label>
@@ -503,7 +505,7 @@ export default function SpotTradeView() {
                         onClick={() => setIsMiniChartOpen(!isMiniChartOpen)}
                     >
                         <span className="text-[14px] font-bold text-gray-900">BTC/USDT chart</span>
-                        <ChevronDown className={`w-5 h-5 text-gray-500 transition-transform ${isMiniChartOpen ? '' : 'rotate-180'}`} />
+                        <div className={`text-gray-500 transition-transform flex items-center ${isMiniChartOpen ? '' : 'rotate-180'}`}><ChevronDown size={20} /></div>
                     </div>
                     {isMiniChartOpen && (
                         <div className="px-4 pb-2 animate-in fade-in">
@@ -511,7 +513,7 @@ export default function SpotTradeView() {
                                 <span>5m</span><span>15m</span>
                                 <span className="text-gray-900 font-bold border-b-2 border-gray-900 pb-2 -mb-2">1h</span>
                                 <span>4h</span>
-                                <span>More <ArrowDropDown className="w-7 h-7 inline" /></span>
+                                <span>More <div className="inline-flex items-center"><ArrowDropDown size={28} /></div></span>
                             </div>
                             <div className="h-[200px] w-full relative bg-white">
                                 <div className="absolute top-2 left-0 z-10 opacity-[0.03] pointer-events-none w-full h-full flex justify-center items-center">
@@ -526,28 +528,28 @@ export default function SpotTradeView() {
                 {/* Bottom Navigation */}
                 <div className="fixed bottom-0 w-full max-w-md bg-white border-t border-gray-200 flex items-center justify-between px-6 py-2 z-50 h-[65px]">
                     <div className="flex flex-col items-center justify-center gap-1 text-gray-400 opacity-60 w-12 cursor-pointer">
-                        <LayoutGrid className="w-[22px] h-[22px]" />
+                        <div className="text-gray-400"><LayoutGrid size={22} /></div>
                         <span className="text-[10px] font-medium">OKX</span>
                     </div>
                     <div className="flex flex-col items-center justify-center gap-1 text-gray-400 w-12 cursor-pointer">
-                        <BarChart2 className="w-[22px] h-[22px]" />
+                        <div className="text-gray-400"><BarChart2 size={22} /></div>
                         <span className="text-[10px] font-medium">Markets</span>
                     </div>
                     <div className="relative -top-5 bg-white rounded-full p-[3px]">
                         <div className="bg-[#111] text-white w-14 h-14 rounded-full flex flex-col items-center justify-center font-bold shadow-md cursor-pointer">
                             <div className="flex flex-col -space-y-1 items-center justify-center">
-                                <ChevronDown className="w-5 h-5 rotate-180" strokeWidth={3.5} />
-                                <ChevronDown className="w-5 h-5" strokeWidth={3.5} />
+                                <div className="rotate-180"><ChevronDown size={20} /></div>
+                                <ChevronDown size={20} />
                             </div>
                         </div>
                         <span className="text-[11px] font-bold text-gray-900 absolute -bottom-4 left-1/2 transform -translate-x-1/2">Trade</span>
                     </div>
                     <div className="flex flex-col items-center justify-center gap-1 text-gray-400 w-12 cursor-pointer">
-                        <Compass className="w-[22px] h-[22px]" />
+                        <div className="text-gray-400"><Compass size={22} /></div>
                         <span className="text-[10px] font-medium">Explore</span>
                     </div>
                     <div className="flex flex-col items-center justify-center gap-1 text-gray-400 w-12 cursor-pointer">
-                        <PieChart className="w-[22px] h-[22px]" />
+                        <div className="text-gray-400"><PieChart size={22} /></div>
                         <span className="text-[10px] font-medium">Assets</span>
                     </div>
                 </div>

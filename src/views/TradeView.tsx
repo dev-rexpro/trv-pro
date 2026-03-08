@@ -330,8 +330,7 @@ const TradeView = () => {
         }
     };
 
-    const handleSliderChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const pct = parseInt(e.target.value);
+    const updateAmountByPercent = (pct: number) => {
         setSliderPercent(pct);
         if (activeTopTab === 'Futures') {
             const limit = maxBuySellFutures;
@@ -348,6 +347,11 @@ const TradeView = () => {
                 setAmountInput(pct === 0 ? '' : val.toFixed(8));
             }
         }
+    };
+
+    const handleSliderChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const pct = parseInt(e.target.value);
+        updateAmountByPercent(pct);
     };
 
     const cycleOrderBookView = () => {
@@ -659,9 +663,13 @@ const TradeView = () => {
                         <div className="absolute left-[6px] right-[6px] h-[3px] bg-gray-200">
                             <div className="h-full transition-all duration-75 bg-gray-800" style={{ width: `${sliderPercent}%` }} />
                         </div>
-                        <div className="absolute left-[6px] right-[6px] flex justify-between items-center h-full pointer-events-none">
+                        <div className="absolute left-[6px] right-[6px] flex justify-between items-center h-full z-40 pointer-events-none">
                             {[0, 25, 50, 75, 100].map(val => (
-                                <div key={val} className={`w-[9px] h-[9px] rounded-full border-[2px] z-10 transition-colors duration-75 ${sliderPercent >= val ? 'bg-gray-800 border-gray-800' : 'bg-white border-gray-300'}`} />
+                                <div
+                                    key={val}
+                                    onClick={() => updateAmountByPercent(val)}
+                                    className={`w-[11px] h-[11px] rounded-full border-[2px] z-50 transition-colors duration-75 cursor-pointer pointer-events-auto bg-white ${sliderPercent >= val ? 'border-gray-800' : 'border-gray-300'}`}
+                                />
                             ))}
                         </div>
                         <input
@@ -670,9 +678,9 @@ const TradeView = () => {
                             className="absolute w-full h-full opacity-0 cursor-pointer z-30 left-0"
                         />
                         <div
-                            className="absolute w-[15px] h-[15px] bg-white border-[3.5px] border-gray-800 rounded-full z-20 pointer-events-none transition-all duration-75 shadow-sm"
+                            className="absolute w-[15px] h-[15px] bg-white border-[3.5px] border-gray-800 rounded-full z-60 pointer-events-none transition-all duration-75 shadow-sm"
                             style={{
-                                left: `calc(10.5px + (${sliderPercent} / 100) * (100% - 21px))`,
+                                left: `calc(11.5px + (${sliderPercent} / 100) * (100% - 23px))`,
                                 transform: 'translateX(-50%)'
                             }}
                         />

@@ -17,13 +17,23 @@ export default defineConfig(({ mode }) => {
           name: 'TRIV Exchange',
           short_name: 'triv',
           description: 'TRIV Exchange PWA',
-          theme_color: '#000000',
+          theme_color: '#ffffff',
+          background_color: '#ffffff',
+          display: 'standalone',
+          start_url: '/',
+          scope: '/',
           icons: [
             {
               src: '48x48.png',
               sizes: '48x48',
               type: 'image/png',
-              purpose: 'maskable'
+              purpose: 'any',
+            },
+            {
+              src: 'icons/icon-192x192.png',
+              sizes: '192x192',
+              type: 'image/png',
+              purpose: 'maskable',
             },
             {
               src: '72x72.png',
@@ -59,9 +69,19 @@ export default defineConfig(({ mode }) => {
               src: '512x512.png',
               sizes: '512x512',
               type: 'image/png',
-              purpose: 'maskable'
-            }
+              purpose: 'any',
+            },
+            {
+              src: 'icons/icon-512x512.png',
+              sizes: '512x512',
+              type: 'image/png',
+              purpose: 'maskable',
+            },
           ],
+        },
+        devOptions: {
+          enabled: true,
+          type: 'module',
         },
       }),
     ],
