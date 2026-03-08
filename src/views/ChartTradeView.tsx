@@ -37,7 +37,7 @@ import trivLogo from '../assets/triv-logo.svg';
 const INTERVALS = ['5m', '15m', '1h', '4h', '1D'];
 
 const ChartTradeView = () => {
-    const { selectedCoin, tradeType, setActivePage, setPairPickerOpen, favorites, toggleFavorite, markets, futuresMarkets } = useExchangeStore();
+    const { selectedCoin, tradeType, setActivePage, setSearchOpen, favorites, toggleFavorite, markets, futuresMarkets } = useExchangeStore();
     const [interval, setInterval_] = useState('1h');
     const [activeTab, setActiveTab] = useState('Chart');
     const [infoTab, setInfoTab] = useState('Crypto info');
@@ -147,7 +147,7 @@ const ChartTradeView = () => {
                     <div className="flex items-center gap-3">
                         <ChevronLeft className="w-6 h-6 text-gray-800 cursor-pointer" onClick={() => isChartExpanded ? setIsChartExpanded(false) : window.history.back()} />
                         <div>
-                            <div className="flex items-center gap-2 cursor-pointer" onClick={() => setPairPickerOpen(true)}>
+                            <div className="flex items-center gap-2 cursor-pointer" onClick={() => setSearchOpen(true)}>
                                 <h1 className="text-xl font-bold text-gray-900 tracking-tight">{selectedCoin.replace('USDT', '/USDT')}</h1>
                                 <span className="text-[11px] font-bold text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded">Spot</span>
                                 <span className="text-[11px] font-bold text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded">10x</span>
@@ -513,7 +513,7 @@ const ChartTradeView = () => {
             {/* Bottom bar */}
             <div className={`fixed bottom-0 w-full max-w-md border-t border-slate-100 px-4 py-2 flex items-center justify-between gap-4 z-[70] ${isChartExpanded ? 'bg-[#fcfcfc] h-[70px]' : 'bg-white'}`}>
                 <button
-                    className={`flex-1 ${isChartExpanded ? 'max-w-[180px]' : 'max-w-[150px]'} bg-black text-white font-bold py-2.5 rounded-full text-[15px] text-center active:scale-[0.98] transition-all whitespace-nowrap`}
+                    className={`flex-1 ${isChartExpanded ? 'max-w-[210px]' : 'max-w-[180px]'} bg-black text-white font-bold py-2.5 rounded-full text-[15px] text-center active:scale-[0.98] transition-all whitespace-nowrap`}
                     onClick={() => {
                         useExchangeStore.setState({ selectedCoin, activePage: isFutures ? 'futures' : 'trade' });
                     }}

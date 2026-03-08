@@ -4,7 +4,8 @@ import { motion } from 'motion/react';
 import useExchangeStore from '../stores/useExchangeStore';
 import { searchDexScreener, COIN_NAME_MAP } from '../utils/api';
 import CoinIcon from './CoinIcon';
-import { FiSearch as Search, FiTrash2 as Trash2, FiStar as Star } from 'react-icons/fi';
+import { FiSearch as Search, FiStar as Star } from 'react-icons/fi';
+import { RiDeleteBin7Line as Trash2 } from 'react-icons/ri';
 import { LuChevronDown } from 'react-icons/lu';
 import AnimatedPlaceholder from './AnimatedPlaceholder';
 
@@ -156,7 +157,7 @@ const SearchOverlay = () => {
                             <div className="mb-8">
                                 <div className="flex justify-between items-center mb-4">
                                     <h3 className="font-bold text-[18px] text-slate-900 tracking-tight">Search history</h3>
-                                    <button onClick={clearHistory}><Trash2 size={18} className="text-slate-400 hover:text-red-500 transition-colors" /></button>
+                                    <button onClick={clearHistory}><Trash2 size={20} className="text-slate-400 hover:text-red-500 transition-colors" /></button>
                                 </div>
                                 <div className="flex flex-wrap gap-2">
                                     {history.slice(0, isHistoryExpanded ? 20 : 5).map((item, idx) => (

@@ -8,17 +8,17 @@ import { convertAmount } from '../utils/format';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     FiCheck as Check, FiChevronRight as ChevronRight, FiSearch as Search,
-    FiEye as Eye, FiEyeOff as EyeOff, FiFilter as Filter, FiArrowRight as ArrowRight,
-    FiRepeat as ArrowRightLeft, FiRefreshCcw as RefreshCcw, FiTrendingUp as LineChart,
+    FiEye as Eye, FiEyeOff as EyeOff, FiArrowRight as ArrowRight,
     FiCalendar as CalendarDays, FiBriefcase as Briefcase, FiDollarSign as CircleDollarSign,
-    FiClock as AlarmClock, FiDownload as ArrowDownToLine, FiUpload as ArrowUpFromLine,
-    FiFileText as FileText,
+    FiDownload as ArrowDownToLine, FiUpload as ArrowUpFromLine,
+    FiRepeat as ArrowRightLeft, FiRefreshCcw as RefreshCcw, FiTrendingUp as LineChart,
 } from 'react-icons/fi';
+import { TbFilter2Cog } from 'react-icons/tb';
+import { GrDocumentTime as History, GrDocumentTime as AlarmClock } from 'react-icons/gr';
 import { LuTimerReset as TimerReset } from 'react-icons/lu';
 import { FaCoins as Coins } from 'react-icons/fa';
 import { MdOutlineArrowDropDown as ChevronDown } from 'react-icons/md';
 import { RiPlayListAddFill as MoreHorizontal } from 'react-icons/ri';
-import { MdHistory as History } from 'react-icons/md';
 import { AutoShrink } from '../components/AutoShrink';
 import { SlotTicker } from '../components/SlotTicker';
 
@@ -80,7 +80,7 @@ const AssetsView = () => {
                             <span className="cursor-pointer text-[#FF4D5B] active:scale-90 transition-transform">
                                 <TimerReset size={18} onClick={() => setIsConfirmOpen(true)} />
                             </span>
-                            <span className="cursor-pointer"><FileText size={16} onClick={() => setActivePage('history')} /></span>
+                            <span className="cursor-pointer"><History size={16} onClick={() => setActivePage('history')} /></span>
                         </div>
                     </div>
                     <div className="mb-4">
@@ -155,7 +155,7 @@ const AssetsView = () => {
                     <div className="flex gap-4">
                         {activeTab === 'Overview' ? <span className="text-[15px] font-bold text-slate-900">Allocation</span> : activeTab === 'Spot' ? <><span className="text-[15px] font-bold text-slate-900">Crypto</span><span className="text-[15px] font-bold text-slate-300">Fiat</span></> : activeTab === 'Futures' ? <><span className="text-[15px] font-medium text-slate-400">Positions</span><span className="text-[15px] font-bold text-slate-900">Assets</span></> : <><span className="text-[15px] font-bold text-slate-900">Coin</span><span className="text-[15px] font-medium text-slate-400">Product</span></>}
                     </div>
-                    {activeTab === 'Spot' ? <div className="flex items-center text-slate-400 text-[12px] font-medium gap-1"><History size={14} /><span>Tiny Swap</span></div> : activeTab === 'Earn' ? <div className="flex items-center text-slate-400 cursor-pointer"><Filter size={16} strokeWidth={2.5} /></div> : null}
+                    {activeTab === 'Spot' ? <div className="flex items-center text-slate-400 text-[12px] font-medium gap-1"><History size={14} /><span>Tiny Swap</span></div> : activeTab === 'Earn' ? <div className="flex items-center text-slate-400 cursor-pointer"><TbFilter2Cog size={18} /></div> : null}
                 </div>
 
                 {activeTab !== 'Earn' && activeTab !== 'Overview' && (

@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FiChevronLeft as ChevronLeft, FiCopy as Copy, FiCheck as Check, FiFilter as Filter } from 'react-icons/fi';
+import { FiChevronLeft as ChevronLeft, FiCopy as Copy, FiCheck as Check } from 'react-icons/fi';
+import { TbFilter2Cog } from 'react-icons/tb';
 import { LuFileSearch as FileSearch } from 'react-icons/lu';
 import { MdOutlineArrowDropDown as ChevronDown } from 'react-icons/md';
 import useExchangeStore from '../stores/useExchangeStore';
@@ -240,7 +241,7 @@ const HistoryView = () => {
                     setTempEndDate(endDate || new Date().toISOString().split('T')[0]);
                     setOpenSheet('date');
                 }} className="cursor-pointer text-slate-400 hover:text-slate-600 transition-colors bg-[#F5F7F9] p-1.5 rounded">
-                    <Filter size={16} />
+                    <TbFilter2Cog size={18} />
                 </div>
             </div>
 

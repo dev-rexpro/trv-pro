@@ -48,13 +48,17 @@ const OrderConfirmationModal: React.FC<OrderConfirmationModalProps> = ({
                         animate={{ y: 0 }}
                         exit={{ y: '100%' }}
                         transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-                        className="relative bg-white w-full max-w-[500px] rounded-t-[32px] p-6 pb-12 shadow-2xl z-20"
+                        className="relative bg-white w-full max-w-[500px] rounded-t-[24px] px-6 pt-2 pb-10 shadow-2xl z-20"
                     >
+                        {/* Handle */}
+                        <div className="flex justify-center mb-6">
+                            <div className="w-10 h-1 bg-slate-200 rounded-full" />
+                        </div>
                         {/* Header */}
-                        <div className="flex items-center justify-between mb-8">
-                            <h3 className="text-[20px] font-bold text-gray-900">Order confirmation</h3>
+                        <div className="flex items-center justify-between mb-6">
+                            <h3 className="text-[20px] font-semibold text-gray-900">Order confirmation</h3>
                             <button onClick={onClose} className="p-1 text-gray-400 hover:text-gray-600">
-                                <IoClose size={28} />
+                                <IoClose size={24} />
                             </button>
                         </div>
 

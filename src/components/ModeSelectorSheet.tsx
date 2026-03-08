@@ -65,7 +65,7 @@ const ModeSelectorSheet: React.FC<ModeSelectorSheetProps> = ({ isOpen, onClose, 
                         </div>
 
                         <div className="flex justify-between items-center mb-6">
-                            <h2 className="text-[20px] font-bold text-slate-900 leading-tight">Select your mode</h2>
+                            <h2 className="text-[20px] font-semibold text-slate-900 leading-tight">Select your mode</h2>
                         </div>
 
                         <div className="flex flex-col gap-4">
@@ -78,18 +78,25 @@ const ModeSelectorSheet: React.FC<ModeSelectorSheetProps> = ({ isOpen, onClose, 
                                             onSelect(mode.name);
                                             onClose();
                                         }}
-                                        className={`flex items-center gap-4 p-5 rounded-2xl border-2 transition-all text-left ${isSelected
+                                        className={`flex items-center gap-4 py-2.5 px-4 rounded-lg border-2 transition-all text-left ${isSelected
                                             ? 'border-slate-900 bg-white shadow-sm'
                                             : 'border-slate-100 bg-white hover:border-slate-200'
                                             }`}
                                     >
-                                        <div className={`w-12 h-12 rounded-xl bg-slate-50 flex items-center justify-center ${mode.color}`}>
-                                            <mode.icon size={24} />
+                                        <div className={`${mode.color} flex items-center justify-center`}>
+                                            <mode.icon size={26} />
                                         </div>
                                         <div className="flex-1">
-                                            <div className="text-[17px] font-bold text-slate-900">{mode.name}</div>
-                                            <div className="text-sm text-slate-500 font-medium">{mode.description}</div>
+                                            <div className="text-[17px] font-medium text-slate-900">{mode.name}</div>
+                                            <div className="text-sm text-slate-500 font-normal">{mode.description}</div>
                                         </div>
+                                        {isSelected && (
+                                            <div className="w-5 h-5 rounded-full bg-slate-900 text-white flex items-center justify-center">
+                                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                                                    <polyline points="20 6 9 17 4 12" />
+                                                </svg>
+                                            </div>
+                                        )}
                                     </button>
                                 );
                             })}

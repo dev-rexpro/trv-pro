@@ -6,16 +6,17 @@ import CoinIcon from '../components/CoinIcon';
 import MarketRow from '../components/MarketRow';
 import {
     FiSearch as Search,
-    FiClock as AlarmClock,
 } from 'react-icons/fi';
+import { TbFilter2Cog } from 'react-icons/tb';
+import { GrDocumentTime as AlarmClock } from 'react-icons/gr';
 import {
     MdLocalFireDepartment as Flame,
     MdEditNote,
-    MdFilterList,
+    MdOutlineArrowDropUp as ArrowDropUp,
+    MdOutlineArrowDropDown as ArrowDropDown,
 } from 'react-icons/md';
 import MarketOverview from '../components/MarketOverview';
 import AnimatedPlaceholder from '../components/AnimatedPlaceholder';
-import { LuChevronsUpDown } from "react-icons/lu";
 
 const FILTERS = ['All', 'Hot', 'Top', 'New', 'Gainers', 'Losers', 'MCap', 'Turnover'];
 
@@ -191,7 +192,7 @@ const MarketView = () => {
                         ))}
                     </div>
                     <div className="absolute right-0 top-0 bottom-0 bg-gradient-to-l from-white via-white to-transparent pl-6 flex items-center justify-center shrink-0 pr-4">
-                        <MdFilterList size={20} className="text-slate-900" />
+                        <TbFilter2Cog size={18} className="text-slate-900" />
                     </div>
                 </div>
             )}
@@ -200,22 +201,34 @@ const MarketView = () => {
                 <MarketOverview />
             ) : (
                 <>
-                    <div className="px-4 flex justify-between items-center text-[10px] uppercase font-bold text-slate-400 mb-2 mt-4 tracking-wider">
+                    <div className="px-4 flex justify-between items-center text-[12px] font-bold text-slate-400 mb-2 mt-4">
                         <div className="flex items-center gap-1">
                             <span>Name</span>
-                            <LuChevronsUpDown size={10} className="text-slate-300" />
+                            <div className="flex flex-col -space-y-3 opacity-50">
+                                <ArrowDropUp size={18} className="text-slate-400" />
+                                <ArrowDropDown size={18} className="text-slate-400" />
+                            </div>
                             <span className="text-slate-200 mx-0.5">/</span>
                             <span>Turnover</span>
-                            <LuChevronsUpDown size={10} className="text-slate-300" />
+                            <div className="flex flex-col -space-y-3 opacity-50">
+                                <ArrowDropUp size={18} className="text-slate-400" />
+                                <ArrowDropDown size={18} className="text-slate-400" />
+                            </div>
                         </div>
                         <div className="flex items-center gap-4">
                             <div className="flex items-center gap-1">
                                 <span>Last price</span>
-                                <LuChevronsUpDown size={10} className="text-slate-300" />
+                                <div className="flex flex-col -space-y-3 opacity-50">
+                                    <ArrowDropUp size={18} className="text-slate-400" />
+                                    <ArrowDropDown size={18} className="text-slate-400" />
+                                </div>
                             </div>
                             <div className="w-[72px] flex items-center justify-center gap-1">
                                 <span>Change</span>
-                                <LuChevronsUpDown size={10} className="text-slate-300" />
+                                <div className="flex flex-col -space-y-3 opacity-50">
+                                    <ArrowDropUp size={18} className="text-slate-400" />
+                                    <ArrowDropDown size={18} className="text-slate-400" />
+                                </div>
                             </div>
                         </div>
                     </div>

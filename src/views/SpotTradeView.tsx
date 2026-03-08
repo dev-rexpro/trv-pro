@@ -440,11 +440,11 @@ export default function SpotTradeView() {
                         })()}
 
                         <div className="flex items-center gap-1.5 px-1">
-                            <div className="flex-1 flex items-center justify-between bg-gray-50 border border-gray-100 px-2 h-[30px] rounded-[6px] text-[13px] font-semibold text-gray-600 shadow-sm cursor-pointer">
-                                0.1 <ArrowDropDown className="w-7 h-7 text-gray-400" />
+                            <div className="flex-1 flex items-center justify-between bg-gray-50 border border-gray-100 px-2 h-[26px] rounded-[6px] text-[13px] font-semibold text-gray-600 cursor-pointer">
+                                0.1 <ArrowDropDown className="w-6 h-6 text-gray-400" />
                             </div>
                             <div
-                                className="w-[26px] h-[26px] shrink-0 flex flex-col items-center justify-center gap-[3px] border border-gray-100 rounded-[6px] bg-gray-50 cursor-pointer shadow-sm"
+                                className="w-[26px] h-[26px] shrink-0 flex flex-col items-center justify-center gap-[3px] border border-gray-100 rounded-[6px] bg-gray-50 cursor-pointer"
                                 onClick={cycleOrderBookView}
                             >
                                 {orderBookView === 'both' && (

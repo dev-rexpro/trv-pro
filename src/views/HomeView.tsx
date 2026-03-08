@@ -11,7 +11,6 @@ import ojkLogo from '../assets/ojk.png';
 import bappebtiLogo from '../assets/bappebti.png';
 import {
     FiSearch as Search,
-    FiFilter as Filter,
     FiMenu as Menu,
     FiBell as Bell,
     FiEye as Eye,
@@ -20,6 +19,7 @@ import {
     FiGrid as Grid,
     FiChevronRight as ChevronRight,
 } from 'react-icons/fi';
+import { TbFilter2Cog } from 'react-icons/tb';
 import {
     MdLocalFireDepartment as Flame,
     MdOutlineArrowDropUp as ChevronUp,
@@ -35,7 +35,7 @@ import {
     RiInstagramFill,
     RiTiktokFill
 } from 'react-icons/ri';
-import { HiOutlineArrowDownTray as ArrowDownTray, HiOutlineArrowUpTray as ArrowUpTray, HiOutlineArrowsRightLeft as ArrowsRightLeft, HiOutlineChartBar as ChartBar, HiOutlineClock as Clock } from 'react-icons/hi2';
+import { HiOutlineArrowDownTray as ArrowDownTray, HiOutlineArrowUpTray as ArrowUpTray, HiOutlineArrowsRightLeft as ArrowsRightLeft, HiOutlineChartBar as ChartBar } from 'react-icons/hi2';
 import { PnLChart } from '../components/PnLChart';
 import { AutoShrink } from '../components/AutoShrink';
 import { formatCurrency, getCurrencySymbol, formatPrice } from '../utils/format';
@@ -343,7 +343,7 @@ const HomeView = () => {
                                 </button>
                             ))}
                         </div>
-                        <Filter size={16} className="text-slate-400" />
+                        <TbFilter2Cog size={18} className="text-slate-400" />
                     </div>
 
                     <div className="mt-2 space-y-1">
@@ -463,7 +463,7 @@ const NewsSection = () => {
                         onClick={() => setActiveNewsTab(tab)}
                         className={`whitespace-nowrap relative ${activeNewsTab === tab ? 'text-slate-900 font-bold' : ''}`}
                     >
-                        <div className={`px-3 py-1.5 rounded-full transition-colors ${activeNewsTab === tab ? 'bg-[#F5F7F9]' : ''}`}>
+                        <div className={`px-3 py-2 rounded-full transition-colors ${activeNewsTab === tab ? 'bg-[#F5F7F9]' : ''}`}>
                             {tab}
                         </div>
                     </button>

@@ -4,8 +4,8 @@ import {
     FiCheck as Check,
     FiInfo as Info,
     FiChevronRight as ChevronRight,
-    FiFileText as FileText,
 } from 'react-icons/fi';
+import { GrDocumentTime as History } from 'react-icons/gr';
 import { LuCirclePlus, LuChevronUp, LuChevronDown as PairChevronDown } from 'react-icons/lu';
 import {
     MdOutlineArrowDropDown as ArrowDropDown,
@@ -30,7 +30,7 @@ const TradeView = () => {
         setActivePage, wallets, markets, openOrders, positions,
         spotCostBasis, placeSpotOrder, cancelSpotOrder, placeFuturesOrder,
         closeFuturesPosition, showOrderConfirmation, setShowOrderConfirmation,
-        closeAll, tradeType, setTradeType, selectedCoin
+        closeAll, tradeType, setTradeType, selectedCoin, setSearchOpen
     } = useExchangeStore();
 
     const currentSymbol = selectedCoin || 'BTCUSDT';
@@ -525,7 +525,7 @@ const TradeView = () => {
 
             {/* Symbol Header */}
             <div className="px-4 flex items-center justify-between border-b border-gray-100 bg-white sticky top-0 z-[100] h-[52px]" style={{ transform: 'translateZ(0)' }}>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 cursor-pointer" onClick={() => setSearchOpen(true)}>
                     <h1 className="text-[22px] font-bold text-gray-900 leading-none">{activeTopTab === 'Futures' ? currentSymbol : currentSymbol.replace('USDT', '/USDT')}</h1>
                     {activeTopTab === 'Futures' ? (
                         <span className="bg-[#fff7e6] text-[#faad14] border border-[#ffe58f] text-[11px] font-bold px-1.5 py-[1px] rounded-[4px] leading-none mt-0.5">Perp</span>
@@ -535,8 +535,8 @@ const TradeView = () => {
                     <ArrowDropDown className="w-6 h-6 text-gray-500 mt-0.5" />
                 </div>
                 <div className="flex items-center gap-4">
-                    <CandlestickChart className="w-6 h-6 text-gray-800 cursor-pointer" onClick={() => setActivePage('chart-trade')} />
-                    <AlignRight className="w-6 h-6 text-gray-800" />
+                    <CandlestickChart className="w-7 h-7 text-gray-800 cursor-pointer" onClick={() => setActivePage('chart-trade')} />
+                    <AlignRight className="w-7 h-7 text-gray-800" />
                 </div>
             </div>
 
@@ -933,13 +933,13 @@ const TradeView = () => {
 
                     <div className="flex items-center gap-1.5 px-1">
                         <div
-                            className="flex-1 flex items-center justify-between bg-gray-50 border border-gray-100 px-2 h-[30px] rounded-[6px] text-[13px] font-semibold text-gray-600 shadow-sm cursor-pointer"
+                            className="flex-1 flex items-center justify-between bg-gray-50 border border-gray-100 px-2 h-[26px] rounded-[6px] text-[13px] font-semibold text-gray-600 cursor-pointer"
                             onClick={() => setIsPrecisionSheetOpen(true)}
                         >
-                            {precision} <ArrowDropDown className="w-7 h-7 text-gray-400" />
+                            {precision} <ArrowDropDown className="w-6 h-6 text-gray-400" />
                         </div>
                         <div
-                            className="w-[26px] h-[26px] shrink-0 flex flex-col items-center justify-center gap-[4px] border border-gray-100 rounded-[6px] bg-gray-50 cursor-pointer shadow-sm"
+                            className="w-[26px] h-[26px] shrink-0 flex flex-col items-center justify-center gap-[4px] border border-gray-100 rounded-[6px] bg-gray-50 cursor-pointer"
                             onClick={cycleOrderBookView}
                         >
                             {orderBookView === 'both' && (
@@ -970,7 +970,7 @@ const TradeView = () => {
                         <span className="text-[14px]">Orders ({
                             openOrders.filter(o => !isCurrentSymbolChecked || o.symbol === currentSymbol).length
                         })</span>
-                        <ArrowDropDown className="w-5 h-5 mt-0.5" />
+                        <ArrowDropDown className="w-[18px] h-[18px] mt-0.5" />
                     </div>
                     <div
                         className={`flex items-center gap-1.5 h-full shrink-0 cursor-pointer transition-colors ${activeTab === 'positions' ? 'text-gray-900 font-bold' : 'text-gray-500 font-semibold'}`}
@@ -1001,7 +1001,7 @@ const TradeView = () => {
                                     }).length
                             })
                         </span>
-                        <ArrowDropDown className="w-5 h-5 mt-0.5" />
+                        <ArrowDropDown className="w-[18px] h-[18px] mt-0.5" />
                     </div>
                     <div
                         className={`flex items-center gap-1.5 h-full shrink-0 cursor-pointer transition-colors ${activeTab === 'bots' ? 'text-gray-900 font-bold' : 'text-gray-500 font-semibold'}`}
@@ -1012,11 +1012,11 @@ const TradeView = () => {
                         }}
                     >
                         <span className="text-[14px]">Bots (0)</span>
-                        <ArrowDropDown className="w-5 h-5 mt-0.5" />
+                        <ArrowDropDown className="w-[18px] h-[18px] mt-0.5" />
                     </div>
                 </div>
                 <div className="flex items-center h-full pl-2 bg-white relative cursor-pointer" onClick={() => setActivePage('history')}>
-                    <FileText className="w-5 h-5 text-gray-800" />
+                    <History className="w-[18px] h-[18px] text-gray-800" />
                 </div>
             </div>
 
@@ -1356,22 +1356,26 @@ const TradeView = () => {
                             animate={{ y: 0 }}
                             exit={{ y: '100%' }}
                             transition={{ duration: 0.3, ease: 'easeOut' }}
-                            className="fixed bottom-0 left-0 right-0 bg-white rounded-t-[24px] z-[501] px-4 pb-8"
+                            className="fixed bottom-0 left-0 right-0 bg-white rounded-t-[24px] z-[501] px-6 pt-2 pb-10"
                         >
                             <div className="flex flex-col items-center">
-                                <div className="w-12 h-1.5 bg-gray-200 rounded-full mt-3 mb-6" onClick={() => setIsPrecisionSheetOpen(false)} />
+                                <div className="w-10 h-1 bg-slate-200 rounded-full mb-6" onClick={() => setIsPrecisionSheetOpen(false)} />
                                 <div className="w-full flex flex-col gap-1">
                                     {dynamicPrecisions.map((val) => (
                                         <button
                                             key={val}
-                                            className={`w-full py-4 rounded-xl text-[16px] font-semibold flex items-center justify-between px-4 transition-colors ${precision === val ? 'bg-gray-50 text-gray-900' : 'text-gray-500'}`}
+                                            className={`w-full py-2.5 rounded-lg text-[16px] font-medium flex items-center justify-between px-4 transition-colors ${precision === val ? 'bg-gray-50 text-gray-900' : 'text-gray-500'}`}
                                             onClick={() => {
                                                 setPrecision(val);
                                                 setIsPrecisionSheetOpen(false);
                                             }}
                                         >
                                             {val}
-                                            {precision === val && <Check className="w-5 h-5 text-[#20b26c]" />}
+                                            {precision === val && (
+                                                <div className="w-5 h-5 rounded-full bg-slate-900 text-white flex items-center justify-center">
+                                                    <Check size={12} className="text-white" />
+                                                </div>
+                                            )}
                                         </button>
                                     ))}
                                 </div>
@@ -1396,11 +1400,11 @@ const TradeView = () => {
                             animate={{ y: 0 }}
                             exit={{ y: '100%' }}
                             transition={{ duration: 0.3, ease: 'easeOut' }}
-                            className="fixed bottom-0 left-0 right-0 bg-white rounded-t-[24px] z-[501] px-4 pt-2 pb-10"
+                            className="fixed bottom-0 left-0 right-0 bg-white rounded-t-[24px] z-[501] px-6 pt-2 pb-10"
                         >
-                            <div className="w-10 h-1 bg-gray-200 rounded-full mx-auto mb-6" />
-                            <div className="flex items-center gap-2 mb-6 px-1">
-                                <span className="text-[16px] font-bold text-gray-900">Basic</span>
+                            <div className="w-10 h-1 bg-slate-200 rounded-full mx-auto mb-6" />
+                            <div className="flex items-center gap-2 mb-6">
+                                <span className="text-[20px] font-semibold text-slate-900">Basic</span>
                                 <Info className="w-4 h-4 text-gray-300" />
                             </div>
 
@@ -1417,12 +1421,12 @@ const TradeView = () => {
                                         </svg>
                                     </div>
                                     <div className="flex-1">
-                                        <h4 className="text-[18px] font-bold text-gray-900 mb-1">Limit order</h4>
-                                        <p className="text-[14px] text-gray-500 font-medium leading-tight">Buy or sell at a specified price or better</p>
+                                        <h4 className="text-[17px] font-medium text-slate-900 mb-1">Limit order</h4>
+                                        <p className="text-sm text-gray-500 font-normal leading-tight">Buy or sell at a specified price or better</p>
                                     </div>
                                     {orderType === 'Limit' && (
-                                        <div className="w-6 h-6 rounded-full bg-gray-900 flex items-center justify-center self-center">
-                                            <Check className="w-4 h-4 text-white stroke-[3]" />
+                                        <div className="w-5 h-5 rounded-full bg-slate-900 text-white flex items-center justify-center self-center">
+                                            <Check size={12} className="text-white" />
                                         </div>
                                     )}
                                 </div>
@@ -1439,12 +1443,12 @@ const TradeView = () => {
                                         </svg>
                                     </div>
                                     <div className="flex-1">
-                                        <h4 className="text-[18px] font-bold text-gray-900 mb-1">Market order</h4>
-                                        <p className="text-[14px] text-gray-500 font-medium leading-tight">Promptly buy or sell at the best price in the current market</p>
+                                        <h4 className="text-[17px] font-medium text-slate-900 mb-1">Market order</h4>
+                                        <p className="text-sm text-gray-500 font-normal leading-tight">Promptly buy or sell at the best price in the current market</p>
                                     </div>
                                     {orderType === 'Market' && (
-                                        <div className="w-6 h-6 rounded-full bg-gray-900 flex items-center justify-center self-center">
-                                            <Check className="w-4 h-4 text-white stroke-[3]" />
+                                        <div className="w-5 h-5 rounded-full bg-slate-900 text-white flex items-center justify-center self-center">
+                                            <Check size={12} className="text-white" />
                                         </div>
                                     )}
                                 </div>
@@ -1462,12 +1466,12 @@ const TradeView = () => {
                                         </svg>
                                     </div>
                                     <div className="flex-1">
-                                        <h4 className="text-[18px] font-bold text-gray-900 mb-1">TP/SL</h4>
-                                        <p className="text-[14px] text-gray-500 font-medium leading-tight">Automatically place an order when the market price reaches the target price</p>
+                                        <h4 className="text-[17px] font-medium text-slate-900 mb-1">TP/SL</h4>
+                                        <p className="text-sm text-gray-500 font-normal leading-tight">Automatically place an order when the market price reaches the target price</p>
                                     </div>
                                     {orderType === 'TP/SL' && (
-                                        <div className="w-6 h-6 rounded-full bg-gray-900 flex items-center justify-center self-center">
-                                            <Check className="w-4 h-4 text-white stroke-[3]" />
+                                        <div className="w-5 h-5 rounded-full bg-slate-900 text-white flex items-center justify-center self-center">
+                                            <Check size={12} className="text-white" />
                                         </div>
                                     )}
                                 </div>
@@ -1479,44 +1483,50 @@ const TradeView = () => {
 
             {/* Asset Filter Bottom Sheet */}
             <AnimatePresence>
-                {isAssetFilterSheetOpen && (
-                    <>
-                        <motion.div
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            exit={{ opacity: 0 }}
-                            className="fixed inset-0 bg-black/40 z-[500]"
-                            onClick={() => setIsAssetFilterSheetOpen(false)}
-                        />
-                        <motion.div
-                            initial={{ y: '100%' }}
-                            animate={{ y: 0 }}
-                            exit={{ y: '100%' }}
-                            transition={{ duration: 0.3, ease: 'easeOut' }}
-                            className="fixed bottom-0 left-0 right-0 bg-white rounded-t-[24px] z-[501] px-4 pb-10"
-                        >
-                            <div className="flex flex-col items-center">
-                                <div className="w-12 h-1.5 bg-gray-200 rounded-full mt-3 mb-6" onClick={() => setIsAssetFilterSheetOpen(false)} />
-                                <div className="w-full flex flex-col gap-1">
-                                    {['All', 'Positions', 'Assets'].map((filter) => (
-                                        <button
-                                            key={filter}
-                                            className={`w-full py-4 rounded-xl text-[16px] font-semibold flex items-center justify-between px-4 transition-colors ${assetFilter === filter ? 'bg-gray-50 text-gray-900' : 'text-gray-500'}`}
-                                            onClick={() => {
-                                                setAssetFilter(filter as any);
-                                                setIsAssetFilterSheetOpen(false);
-                                            }}
-                                        >
-                                            {filter}
-                                            {assetFilter === filter && <Check className="w-5 h-5 text-[#20b26c]" />}
-                                        </button>
-                                    ))}
+                {
+                    isAssetFilterSheetOpen && (
+                        <>
+                            <motion.div
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                exit={{ opacity: 0 }}
+                                className="fixed inset-0 bg-black/40 z-[500]"
+                                onClick={() => setIsAssetFilterSheetOpen(false)}
+                            />
+                            <motion.div
+                                initial={{ y: '100%' }}
+                                animate={{ y: 0 }}
+                                exit={{ y: '100%' }}
+                                transition={{ duration: 0.3, ease: 'easeOut' }}
+                                className="fixed bottom-0 left-0 right-0 bg-white rounded-t-[24px] z-[501] px-6 pt-2 pb-10"
+                            >
+                                <div className="flex flex-col items-center">
+                                    <div className="w-10 h-1 bg-slate-200 rounded-full mb-6" onClick={() => setIsAssetFilterSheetOpen(false)} />
+                                    <div className="w-full flex flex-col gap-1">
+                                        {['All', 'Positions', 'Assets'].map((filter) => (
+                                            <button
+                                                key={filter}
+                                                className={`w-full py-2.5 rounded-lg text-[16px] font-medium flex items-center justify-between px-4 transition-colors ${assetFilter === filter ? 'bg-gray-50 text-gray-900' : 'text-gray-500'}`}
+                                                onClick={() => {
+                                                    setAssetFilter(filter as any);
+                                                    setIsAssetFilterSheetOpen(false);
+                                                }}
+                                            >
+                                                {filter}
+                                                {assetFilter === filter && (
+                                                    <div className="w-5 h-5 rounded-full bg-slate-900 text-white flex items-center justify-center">
+                                                        <Check size={12} className="text-white" />
+                                                    </div>
+                                                )}
+                                            </button>
+                                        ))}
+                                    </div>
                                 </div>
-                            </div>
-                        </motion.div>
-                    </>
-                )}
-            </AnimatePresence>
+                            </motion.div >
+                        </>
+                    )
+                }
+            </AnimatePresence >
             <SuccessDialog
                 isOpen={successDialog.isOpen}
                 title={successDialog.title}
@@ -1557,19 +1567,23 @@ const TradeView = () => {
                             animate={{ y: 0 }}
                             exit={{ y: '100%' }}
                             transition={{ duration: 0.3, ease: 'easeOut' }}
-                            className="fixed bottom-0 left-0 right-0 bg-white rounded-t-[24px] z-[501] px-4 pt-2 pb-10"
+                            className="fixed bottom-0 left-0 right-0 bg-white rounded-t-[24px] z-[501] px-6 pt-2 pb-10"
                         >
-                            <div className="w-10 h-1 bg-gray-200 rounded-full mx-auto mb-6" />
-                            <h3 className="text-[18px] font-bold text-gray-900 mb-6 px-1">Margin mode</h3>
+                            <div className="w-10 h-1 bg-slate-200 rounded-full mx-auto mb-6" />
+                            <h3 className="text-[20px] font-semibold text-gray-900 mb-6 px-1">Margin mode</h3>
                             <div className="flex flex-col gap-2">
                                 {['Isolated', 'Cross'].map((mode) => (
                                     <button
                                         key={mode}
-                                        className={`w-full py-4 rounded-xl text-[16px] font-semibold flex items-center justify-between px-4 transition-colors ${marginMode === mode ? 'bg-gray-50 text-gray-900' : 'text-gray-500'}`}
+                                        className={`w-full py-2.5 rounded-lg text-[16px] font-medium flex items-center justify-between px-4 transition-colors ${marginMode === mode ? 'bg-gray-50 text-gray-900' : 'text-gray-500'}`}
                                         onClick={() => { setMarginMode(mode as any); setIsMarginModeSheetOpen(false); }}
                                     >
                                         {mode}
-                                        {marginMode === mode && <Check className="w-5 h-5 text-[#20b26c]" />}
+                                        {marginMode === mode && (
+                                            <div className="w-5 h-5 rounded-full bg-slate-900 text-white flex items-center justify-center">
+                                                <Check size={12} className="text-white" />
+                                            </div>
+                                        )}
                                     </button>
                                 ))}
                             </div>
@@ -1579,7 +1593,7 @@ const TradeView = () => {
             </AnimatePresence>
 
             {/* Leverage Sheet */}
-            <LeverageBottomSheet
+            < LeverageBottomSheet
                 isOpen={isLeverageSheetOpen}
                 onClose={() => setIsLeverageSheetOpen(false)}
                 currentLeverage={leverage}
@@ -1592,57 +1606,59 @@ const TradeView = () => {
 
             {/* Close All Confirmation Modal */}
             <AnimatePresence>
-                {isCloseAllConfirmOpen && (
-                    <>
-                        <motion.div
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            exit={{ opacity: 0 }}
-                            className="fixed inset-0 bg-black/40 z-[1000]"
-                            onClick={() => setIsCloseAllConfirmOpen(false)}
-                        />
-                        <motion.div
-                            initial={{ scale: 0.9, opacity: 0, x: '-50%', y: '-50%' }}
-                            animate={{ scale: 1, opacity: 1, x: '-50%', y: '-50%' }}
-                            exit={{ scale: 0.9, opacity: 0, x: '-50%', y: '-50%' }}
-                            transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-                            className="fixed top-1/2 left-1/2 w-[90%] max-w-[340px] bg-white rounded-[24px] z-[1001] overflow-hidden"
-                        >
-                            <div className="p-6 flex flex-col items-center text-center">
-                                <div className="w-12 h-12 rounded-full bg-gray-900 flex items-center justify-center mb-4">
-                                    <Info className="w-6 h-6 text-white" />
+                {
+                    isCloseAllConfirmOpen && (
+                        <>
+                            <motion.div
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                exit={{ opacity: 0 }}
+                                className="fixed inset-0 bg-black/40 z-[1000]"
+                                onClick={() => setIsCloseAllConfirmOpen(false)}
+                            />
+                            <motion.div
+                                initial={{ scale: 0.9, opacity: 0, x: '-50%', y: '-50%' }}
+                                animate={{ scale: 1, opacity: 1, x: '-50%', y: '-50%' }}
+                                exit={{ scale: 0.9, opacity: 0, x: '-50%', y: '-50%' }}
+                                transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+                                className="fixed top-1/2 left-1/2 w-[90%] max-w-[340px] bg-white rounded-[24px] z-[1001] overflow-hidden"
+                            >
+                                <div className="p-6 flex flex-col items-center text-center">
+                                    <div className="w-12 h-12 rounded-full bg-gray-900 flex items-center justify-center mb-4">
+                                        <Info className="w-6 h-6 text-white" />
+                                    </div>
+                                    <p className="text-[16px] leading-[1.4] text-gray-900 font-medium px-2">
+                                        Your positions will all be closed at <span className="font-bold">market price</span>, and any open orders (or reduce-only orders) will be canceled. Options won't be affected.
+                                    </p>
                                 </div>
-                                <p className="text-[16px] leading-[1.4] text-gray-900 font-medium px-2">
-                                    Your positions will all be closed at <span className="font-bold">market price</span>, and any open orders (or reduce-only orders) will be canceled. Options won't be affected.
-                                </p>
-                            </div>
-                            <div className="flex border-t border-gray-100 h-14">
-                                <button
-                                    className="flex-1 text-[16px] font-semibold text-gray-900 border-r border-gray-100 active:bg-gray-50 transition-colors"
-                                    onClick={() => setIsCloseAllConfirmOpen(false)}
-                                >
-                                    Cancel
-                                </button>
-                                <button
-                                    className="flex-1 text-[16px] font-bold text-gray-900 active:bg-gray-50 transition-colors"
-                                    onClick={() => {
-                                        closeAll();
-                                        setIsCloseAllConfirmOpen(false);
-                                        setSuccessDialog({
-                                            isOpen: true,
-                                            title: 'Close all successful',
-                                            message: 'All positions have been closed and orders canceled.'
-                                        });
-                                    }}
-                                >
-                                    Close all
-                                </button>
-                            </div>
-                        </motion.div>
-                    </>
-                )}
-            </AnimatePresence>
-        </div>
+                                <div className="flex border-t border-gray-100 h-14">
+                                    <button
+                                        className="flex-1 text-[16px] font-semibold text-gray-900 border-r border-gray-100 active:bg-gray-50 transition-colors"
+                                        onClick={() => setIsCloseAllConfirmOpen(false)}
+                                    >
+                                        Cancel
+                                    </button>
+                                    <button
+                                        className="flex-1 text-[16px] font-bold text-gray-900 active:bg-gray-50 transition-colors"
+                                        onClick={() => {
+                                            closeAll();
+                                            setIsCloseAllConfirmOpen(false);
+                                            setSuccessDialog({
+                                                isOpen: true,
+                                                title: 'Close all successful',
+                                                message: 'All positions have been closed and orders canceled.'
+                                            });
+                                        }}
+                                    >
+                                        Close all
+                                    </button>
+                                </div>
+                            </motion.div>
+                        </>
+                    )
+                }
+            </AnimatePresence >
+        </div >
     );
 };
 

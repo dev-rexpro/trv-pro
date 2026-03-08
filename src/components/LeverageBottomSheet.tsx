@@ -61,11 +61,15 @@ const LeverageBottomSheet: React.FC<LeverageBottomSheetProps> = ({
                         animate={{ y: 0 }}
                         exit={{ y: '100%' }}
                         transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-                        className="fixed bottom-0 left-0 right-0 bg-white rounded-t-[28px] z-[1001] px-6 pt-5 pb-10 max-w-md mx-auto"
+                        className="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-white rounded-t-[24px] z-[1001] px-6 pt-2 pb-10"
                     >
+                        {/* Handle */}
+                        <div className="flex justify-center mb-6">
+                            <div className="w-10 h-1 bg-slate-200 rounded-full" />
+                        </div>
                         {/* Header */}
-                        <div className="flex items-center justify-between mb-8">
-                            <h2 className="text-[20px] font-bold text-[#111111]">Adjust leverage</h2>
+                        <div className="flex items-center justify-between mb-6">
+                            <h2 className="text-[20px] font-semibold text-[#111111]">Adjust leverage</h2>
                             <button onClick={onClose} className="p-1">
                                 <span className="w-6 h-6 text-[#999999] flex items-center justify-center">
                                     <XIcon size={24} />
