@@ -56,7 +56,7 @@ const AssetsView = () => {
 
     return (
         <div className={`flex flex-col w-full min-h-screen bg-[#FDFDFD] text-slate-900 font-sans ${activeTab === 'Overview' ? 'pb-[220px]' : 'pb-24'}`}>
-            <div className="bg-white sticky top-0 z-50">
+            <div className="bg-[#FDFDFD] sticky top-0 z-50 pt-[var(--safe-area-top)]">
                 <div className="px-4 pt-4 pb-2 flex justify-between items-center">
                     <div className="flex gap-5 text-[18px] font-medium text-slate-400 overflow-x-auto no-scrollbar">
                         {['Overview', 'Spot', 'Futures', 'Earn'].map((tab) => (

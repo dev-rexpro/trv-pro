@@ -154,8 +154,8 @@ const HomeView = () => {
     };
 
     return (
-        <div className="pb-20 font-sans text-slate-900">
-            <div className="sticky top-0 z-50 bg-white flex justify-between items-center px-4 py-4">
+        <div className="pb-20 font-sans text-slate-900 bg-[#FDFDFD]">
+            <div className="sticky top-0 z-50 bg-[#FDFDFD] flex justify-between items-center px-4 pt-[calc(16px+var(--safe-area-top))] pb-4">
                 <div className="flex items-center">
                     <img src={trivLogo} alt="Triv" className="h-7" />
                 </div>

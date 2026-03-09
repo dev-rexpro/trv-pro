@@ -488,7 +488,7 @@ const TradeView = () => {
     };
 
     return (
-        <div className="flex flex-col bg-white min-h-screen relative pb-[120px]">
+        <div className="flex flex-col bg-[#FDFDFD] min-h-screen relative pb-[120px]">
             <style>
                 {`
           @font-face {
@@ -504,7 +504,7 @@ const TradeView = () => {
         `}
             </style>
 
-            <div className="bg-white shrink-0">
+            <div className="bg-[#FDFDFD] shrink-0 pt-[var(--safe-area-top)]">
                 <div className="px-4 pt-4 pb-2 flex justify-between items-center">
                     <div className="flex gap-5 text-[18px] font-medium text-slate-400 overflow-x-auto no-scrollbar">
                         {['Spot', 'Futures', 'Bots', 'Convert'].map((t) => (
@@ -528,7 +528,7 @@ const TradeView = () => {
             </div>
 
             {/* Symbol Header */}
-            <div className="px-4 flex items-center justify-between border-b border-gray-100 bg-white sticky top-0 z-[100] h-[52px]" style={{ transform: 'translateZ(0)' }}>
+            <div className="px-4 flex items-center justify-between border-b border-gray-100 bg-[#FDFDFD] sticky top-0 z-[100] h-[52px]" style={{ transform: 'translateZ(0)' }}>
                 <div className="flex items-center gap-2 cursor-pointer" onClick={() => setSearchOpen(true)}>
                     <h1 className="text-[22px] font-bold text-gray-900 leading-none">{activeTopTab === 'Futures' ? currentSymbol : currentSymbol.replace('USDT', '/USDT')}</h1>
                     {activeTopTab === 'Futures' ? (

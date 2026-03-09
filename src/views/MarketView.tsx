@@ -112,8 +112,8 @@ const MarketView = () => {
     }, [setActivePage, subTab]);
 
     return (
-        <div className="pb-24 bg-white min-h-screen font-sans">
-            <div className="p-4 flex gap-4 items-center">
+        <div className="pb-24 bg-[#FDFDFD] min-h-screen font-sans">
+            <div className="p-4 pt-[calc(16px+var(--safe-area-top))] flex gap-4 items-center">
                 <div className="relative flex-1 flex items-center bg-[#F5F7F9] rounded-full px-4 py-2.5 cursor-pointer h-[44px]" onClick={() => setSearchOpen(true)}>
                     <Search className="text-slate-400 mr-2" size={18} />
                     <AnimatedPlaceholder className="ml-0" />
@@ -191,7 +191,7 @@ const MarketView = () => {
                             </button>
                         ))}
                     </div>
-                    <div className="absolute right-0 top-0 bottom-0 bg-gradient-to-l from-white via-white to-transparent pl-6 flex items-center justify-center shrink-0 pr-4">
+                    <div className="absolute right-0 top-0 bottom-0 bg-gradient-to-l from-[#FDFDFD] via-[#FDFDFD] to-transparent pl-6 flex items-center justify-center shrink-0 pr-4">
                         <TbFilter2Cog size={18} className="text-slate-900" />
                     </div>
                 </div>
