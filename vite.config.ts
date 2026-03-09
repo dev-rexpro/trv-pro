@@ -15,7 +15,7 @@ export default defineConfig(({ mode }) => {
         includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'mask-icon.svg'],
         manifest: {
           name: 'TRIV Exchange',
-          short_name: 'triv',
+          short_name: 'TRIV',
           description: 'TRIV Exchange PWA',
           theme_color: '#ffffffff',
           background_color: '#ffffffff',
