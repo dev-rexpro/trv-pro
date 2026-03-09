@@ -170,7 +170,7 @@ export default function App() {
       </div>
 
       {activePage !== 'chart-trade' && (
-        <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-100 flex justify-around items-center pt-2 pb-6 z-[200] px-2">
+        <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-100 flex justify-around items-center pt-2 pb-[calc(10px+var(--safe-area-bottom))] z-[200] px-2">
           <button onClick={() => setActivePage('home')} className={`flex flex-col items-center gap-2 ${activePage === 'home' ? 'text-slate-900' : 'text-slate-400'}`}>
             <img src={homeIcon} alt="Home" className={`w-[24px] h-[24px] ${activePage === 'home' ? 'opacity-100' : 'opacity-40'}`} />
             <span className="text-[10px] font-medium">Home</span>
